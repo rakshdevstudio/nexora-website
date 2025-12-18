@@ -5,6 +5,8 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { Menu, X, ChevronRight, ArrowRight, Check, Send, CheckCircle } from 'lucide-react';
 
+import nexoraLogo from "./assets/Nexora transparent.PNG";
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
@@ -27,20 +29,92 @@ function App() {
   useEffect(() => {
     // Initialize AOS
     AOS.init({
-      duration: 800,
+      duration: 1000,
       once: true,
-      easing: 'ease-out'
+      easing: 'ease-out-cubic',
+      offset: 120,
+      delay: 50
     });
 
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
-    
+
+    // Cursor follow logic
+    const cursor = document.querySelector('.custom-cursor');
+    const ring = document.querySelector('.custom-cursor-ring');
+
+    const moveCursor = (e) => {
+      if (!cursor || !ring) return;
+      const { clientX, clientY } = e;
+      cursor.style.left = `${clientX}px`;
+      cursor.style.top = `${clientY}px`;
+      ring.style.left = `${clientX}px`;
+      ring.style.top = `${clientY}px`;
+    };
+
+    window.addEventListener('mousemove', moveCursor);
+
+    // Magnetic CTA logic (desktop only)
+    const magneticButtons = document.querySelectorAll('.btn-primary');
+
+    const handleMagneticMove = (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+
+      const moveX = Math.max(-2, Math.min(2, x * 0.05));
+      const moveY = Math.max(-2, Math.min(2, y * 0.05));
+
+      e.currentTarget.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    };
+
+    const resetMagnetic = (e) => {
+      e.currentTarget.style.transform = 'translate(0, 0)';
+    };
+
+    if (window.matchMedia('(pointer: fine)').matches && window.innerWidth >= 1024) {
+      magneticButtons.forEach((btn) => {
+        btn.classList.add('magnetic');
+        btn.addEventListener('mousemove', handleMagneticMove);
+        btn.addEventListener('mouseleave', resetMagnetic);
+      });
+    }
+
     // Test API connection
-    axios.get(`${API}/`)
-      .then(res => console.log('API Connected:', res.data.message))
-      .catch(err => console.error('API Connection Error:', err));
-    
-    return () => window.removeEventListener('scroll', handleScroll);
+    if (process.env.NODE_ENV === "production" && BACKEND_URL) {
+      axios.get(`${API}/`)
+        .then(res => console.log('API Connected:', res.data.message))
+        .catch(err => console.error('API Connection Error:', err));
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', moveCursor);
+      // Magnetic CTA cleanup
+      magneticButtons.forEach((btn) => {
+        btn.removeEventListener('mousemove', handleMagneticMove);
+        btn.removeEventListener('mouseleave', resetMagnetic);
+      });
+    };
+  }, []);
+
+  // === Global click glow effect ===
+  useEffect(() => {
+    const handleClickGlow = (e) => {
+      const glow = document.createElement("span");
+      glow.className = "click-glow";
+      glow.style.left = `${e.clientX}px`;
+      glow.style.top = `${e.clientY}px`;
+
+      document.body.appendChild(glow);
+
+      setTimeout(() => {
+        glow.remove();
+      }, 700);
+    };
+
+    document.addEventListener("click", handleClickGlow);
+    return () => document.removeEventListener("click", handleClickGlow);
   }, []);
 
   const handleInputChange = (e) => {
@@ -83,12 +157,17 @@ function App() {
 
   return (
     <div className="app-container">
+      <div className="custom-cursor"></div>
+      <div className="custom-cursor-ring"></div>
       {/* Navigation */}
       <nav className="nav-bar">
         <div className="nav-content">
           <div className="nav-logo">
-            <div className="logo-mark"></div>
-            <span className="logo-text">Nexora</span>
+            <img
+              src={nexoraLogo}
+              alt="Nexora"
+              className="nav-logo-image"
+            />
           </div>
           
           {/* Desktop Menu */}
@@ -126,24 +205,55 @@ function App() {
 
       {/* Hero Section */}
       <section className="hero-section" data-testid="hero-section">
-        <div className="hero-background" style={{ transform: `translateY(${scrollY * 0.5}px)` }}></div>
+        <div className="hero-light-layer" />
+        <div className="hero-light-layer hero-light-layer-secondary" />
+        {/* Background with subtle depth */}
+        <div
+          className="hero-background"
+          style={{ transform: `translateY(${scrollY * 0.3}px)` }}
+        ></div>
+        {/* Background wordmark */}
+        <div
+          className="hero-wordmark"
+          style={{ transform: `translateY(${scrollY * 0.15}px)` }}
+          aria-hidden="true"
+        >
+          INTELLIGENCE&nbsp;REIMAGINED
+        </div>
+
         <div className="hero-content">
-          <div className="hero-badge">Reimagined Intelligence</div>
+          {/* Authority badge */}
           
-          <h1 className="hero-title">
-            Intelligence that
-            <br />
-            transforms enterprise
+
+          {/* Headline */}
+          <h1
+            className={`hero-title ${scrollY > 40 ? "hero-title-sharpened" : ""}`}
+          >
+            <span style={{ animationDelay: "0.1s" }}>Enterprise</span>{" "}
+            <span
+              className="nexora-emphasis"
+              style={{ animationDelay: "0.25s" }}
+            >
+              intelligence,
+            </span>{" "}
+            <span
+              className="nexora-emphasis"
+              style={{ animationDelay: "0.4s" }}
+            >
+              engineered
+            </span>{" "}
+            <span style={{ animationDelay: "0.55s" }}>to last</span>
           </h1>
-          
+
+          {/* Subheadline */}
           <p className="hero-subtitle">
-            We build AI-first systems for organizations that demand excellence.
-            <br />
-            Full-stack engineering meets advanced intelligence.
+            Nexora designs and builds AI-native systems for organizations
+            where reliability, scale, and precision are non‑negotiable.
           </p>
-          
+
+          {/* Primary actions */}
           <div className="hero-actions">
-            <button 
+            <button
               onClick={() => setShowContactModal(true)}
               className="btn-primary"
               data-testid="hero-get-started-button"
@@ -151,7 +261,8 @@ function App() {
               Start a conversation
               <ArrowRight className="btn-icon" />
             </button>
-            <button 
+
+            <button
               onClick={() => scrollToSection('services')}
               className="btn-secondary"
               data-testid="hero-learn-more-button"
@@ -161,29 +272,31 @@ function App() {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Proof points */}
         <div className="hero-stats">
           <div className="stat-item">
             <div className="stat-value">99.9%</div>
-            <div className="stat-label">Uptime</div>
+            <div className="stat-label">Production uptime</div>
           </div>
+
           <div className="stat-divider"></div>
+
           <div className="stat-item">
             <div className="stat-value">Enterprise</div>
-            <div className="stat-label">Grade Security</div>
+            <div className="stat-label">Security standards</div>
           </div>
+
           <div className="stat-divider"></div>
+
           <div className="stat-item">
-            <div className="stat-value">24/7</div>
-            <div className="stat-label">Support</div>
-          </div>
-          <div className="stat-divider"></div>
-          <div className="stat-item">
-            <div className="stat-value">AI-First</div>
-            <div className="stat-label">Architecture</div>
+            <div className="stat-value">AI‑Native</div>
+            <div className="stat-label">System architecture</div>
           </div>
         </div>
       </section>
+
+      {/* Cinematic glow curve between hero stats and next section */}
+      <div className="hero-glow-curve" />
 
       {/* About Section */}
       <section id="about" className="section-container" data-testid="about-section">
@@ -196,20 +309,56 @@ function App() {
           <div className="about-grid">
             <div className="about-card" data-aos="fade-up" data-aos-delay="0">
               <div className="about-card-number">01</div>
-              <h3 className="about-card-title">AI-Native Engineering</h3>
-              <p className="about-card-text">We don't retrofit AI into existing systems. We design from first principles with intelligence at the core.</p>
+              <h3 className="about-card-title">AI‑Native Foundations</h3>
+              <p className="about-card-text">
+                We design systems with intelligence built in from day one — not added later.
+                This allows your products to think, learn, and adapt as they grow.
+              </p>
             </div>
-            
+
             <div className="about-card" data-aos="fade-up" data-aos-delay="100">
               <div className="about-card-number">02</div>
-              <h3 className="about-card-title">Enterprise Partnership</h3>
-              <p className="about-card-text">Strategic collaboration with leadership teams to align technology with business outcomes.</p>
+              <h3 className="about-card-title">Business‑First Engineering</h3>
+              <p className="about-card-text">
+                Every technical decision is tied to real business outcomes.
+                We translate strategy into systems that drive efficiency, revenue, and long‑term advantage.
+              </p>
             </div>
-            
+
             <div className="about-card" data-aos="fade-up" data-aos-delay="200">
               <div className="about-card-number">03</div>
-              <h3 className="about-card-title">Production Excellence</h3>
-              <p className="about-card-text">Battle-tested infrastructure that performs under pressure. Built for scale, security, and reliability.</p>
+              <h3 className="about-card-title">Digital Systems & Experiences</h3>
+              <p className="about-card-text">
+                From high‑performance websites to internal platforms, we build fast,
+                intuitive digital systems that feel effortless to use and scale cleanly.
+              </p>
+            </div>
+
+            <div className="about-card" data-aos="fade-up" data-aos-delay="300">
+              <div className="about-card-number">04</div>
+              <h3 className="about-card-title">AI Agents & Automation</h3>
+              <p className="about-card-text">
+                We create intelligent agents that automate workflows, support teams,
+                and make complex operations simpler, faster, and more reliable.
+              </p>
+            </div>
+
+            <div className="about-card" data-aos="fade-up" data-aos-delay="400">
+              <div className="about-card-number">05</div>
+              <h3 className="about-card-title">Scalable System Architecture</h3>
+              <p className="about-card-text">
+                Our systems are built to handle growth, traffic, and data without breaking.
+                Secure, resilient architecture ensures performance under real‑world pressure.
+              </p>
+            </div>
+
+            <div className="about-card" data-aos="fade-up" data-aos-delay="500">
+              <div className="about-card-number">06</div>
+              <h3 className="about-card-title">Long‑Term Partnership</h3>
+              <p className="about-card-text">
+                We don’t just ship and disappear.
+                Nexora works as an ongoing engineering partner, helping you evolve as your business grows.
+              </p>
             </div>
           </div>
         </div>
@@ -224,9 +373,13 @@ function App() {
           </div>
 
           <div className="services-grid">
-            <div className="service-card" data-aos="fade-up" data-aos-delay="0">
+            <div className="service-card service-card-featured" data-aos="fade-up" data-aos-delay="0">
               <h3 className="service-title">AI & Machine Learning</h3>
-              <p className="service-description">Custom models, intelligent automation, and predictive systems that learn and adapt to your business.</p>
+              <p className="service-eyebrow">Flagship capability</p>
+              <p className="service-description">
+                Design and deployment of AI systems that operate in real production
+                environments — from strategy to models to infrastructure.
+              </p>
               <ul className="service-features">
                 <li><Check className="feature-check" />Large Language Model Integration</li>
                 <li><Check className="feature-check" />Predictive Analytics & Forecasting</li>
@@ -428,8 +581,11 @@ function App() {
           <div className="footer-main">
             <div className="footer-brand">
               <div className="footer-logo">
-                <div className="logo-mark"></div>
-                <span className="logo-text">Nexora</span>
+                <img
+                  src={nexoraLogo}
+                  alt="Nexora"
+                  className="footer-logo-image"
+                />
               </div>
               <p className="footer-tagline">Reimagined Intelligence</p>
             </div>
