@@ -46,6 +46,12 @@ else:
     client = None
     db = None
 
+def get_collection(name: str):
+    if USE_DB:
+        return db[name]
+    else:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
 # Create the main app without a prefix
 app = FastAPI()
 
@@ -210,8 +216,10 @@ async def create_contact(input: ContactFormCreate):
             for k, v in input.model_dump().items()
         }
 
+        collection = get_collection("contacts")
+
         # Basic duplicate protection (same email + message within 24h)
-        existing = await db.contacts.find_one({
+        existing = await collection.find_one({
             "email": contact_dict["email"],
             "message": contact_dict["message"]
         })
@@ -225,7 +233,7 @@ async def create_contact(input: ContactFormCreate):
         doc = contact_obj.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
         
-        await db.contacts.insert_one(doc)
+        await collection.insert_one(doc)
 
         send_lead_email(
             subject="New Nexora Contact Lead",
@@ -253,7 +261,8 @@ Message:
 async def get_contacts():
     """Get all contact submissions"""
     try:
-        contacts = await db.contacts.find({}, {"_id": 0}).to_list(1000)
+        collection = get_collection("contacts")
+        contacts = await collection.find({}, {"_id": 0}).to_list(1000)
         
         # Convert ISO string timestamps back to datetime objects
         for contact in contacts:
@@ -281,8 +290,10 @@ async def admin_get_contacts(
 ):
     verify_admin(admin_token)
 
+    collection = get_collection("contacts")
+
     query = {"status": status} if status else {}
-    contacts = await db.contacts.find(query, {"_id": 0}).to_list(500)
+    contacts = await collection.find(query, {"_id": 0}).to_list(500)
 
     for contact in contacts:
         if isinstance(contact["timestamp"], str):
@@ -308,7 +319,9 @@ async def update_contact_status(
     if status not in {"new", "contacted", "converted"}:
         raise HTTPException(status_code=400, detail="Invalid status")
 
-    result = await db.contacts.update_one(
+    collection = get_collection("contacts")
+
+    result = await collection.update_one(
         {"id": contact_id},
         {"$set": {"status": status}}
     )
@@ -328,7 +341,9 @@ async def update_contact_status(
 async def admin_get_service_inquiries(admin_token: Optional[str] = None):
     verify_admin(admin_token)
 
-    inquiries = await db.service_inquiries.find({}, {"_id": 0}).to_list(500)
+    collection = get_collection("service_inquiries")
+
+    inquiries = await collection.find({}, {"_id": 0}).to_list(500)
 
     for inquiry in inquiries:
         if isinstance(inquiry["timestamp"], str):
@@ -348,10 +363,12 @@ async def create_service_inquiry(input: ServiceInquiryCreate):
         }
         inquiry_obj = ServiceInquiry(**inquiry_dict)
         
+        collection = get_collection("service_inquiries")
+
         doc = inquiry_obj.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
         
-        await db.service_inquiries.insert_one(doc)
+        await collection.insert_one(doc)
 
         send_lead_email(
             subject=f"New Nexora Service Inquiry — {inquiry_obj.service}",
@@ -377,8 +394,9 @@ Message:
 async def subscribe_newsletter(input: NewsletterCreate):
     """Subscribe to newsletter"""
     try:
+        collection = get_collection("newsletters")
         # Check if email already exists
-        existing = await db.newsletters.find_one({"email": input.email}, {"_id": 0})
+        existing = await collection.find_one({"email": input.email}, {"_id": 0})
         if existing:
             raise HTTPException(status_code=400, detail="Email already subscribed")
         
@@ -388,7 +406,7 @@ async def subscribe_newsletter(input: NewsletterCreate):
         doc = newsletter_obj.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
         
-        await db.newsletters.insert_one(doc)
+        await collection.insert_one(doc)
         return newsletter_obj
     except HTTPException:
         raise
@@ -400,11 +418,15 @@ async def subscribe_newsletter(input: NewsletterCreate):
 async def get_stats():
     """Get basic statistics"""
     try:
-        total_contacts = await db.contacts.count_documents({})
-        total_inquiries = await db.service_inquiries.count_documents({})
-        total_subscribers = await db.newsletters.count_documents({})
+        contacts_collection = get_collection("contacts")
+        inquiries_collection = get_collection("service_inquiries")
+        newsletters_collection = get_collection("newsletters")
 
-        latest_contact = await db.contacts.find_one(
+        total_contacts = await contacts_collection.count_documents({})
+        total_inquiries = await inquiries_collection.count_documents({})
+        total_subscribers = await newsletters_collection.count_documents({})
+
+        latest_contact = await contacts_collection.find_one(
             {},
             sort=[("timestamp", -1)],
             projection={"_id": 0, "timestamp": 1}
