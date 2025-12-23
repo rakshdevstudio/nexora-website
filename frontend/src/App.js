@@ -1103,8 +1103,8 @@ if (nav) {
 
               <div className="footer-column">
                 <h4 className="footer-heading">Contact</h4>
-                <div className="footer-contact">hello@nexora.ai</div>
-                <div className="footer-contact">San Francisco, CA</div>
+                <div className="footer-contact">info@nexorair.com</div>
+                <div className="footer-contact">Bengaluru, India</div>
               </div>
             </div>
           </div>
