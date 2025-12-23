@@ -33,6 +33,34 @@ EMAIL_ENABLED = all([SMTP_HOST, SMTP_USER, SMTP_PASSWORD, NOTIFY_EMAIL])
 def normalize_text(value: str) -> str:
     return value.strip().replace("\n", " ").replace("\r", " ")
 
+# MongoDB connection
+mongo_url = os.environ.get("MONGO_URL")
+db_name = os.environ.get("DB_NAME")
+
+if not mongo_url or not db_name:
+    raise RuntimeError("MONGO_URL and DB_NAME must be set in environment variables")
+
+client = AsyncIOMotorClient(mongo_url)
+db = client[db_name]
+
+# Create the main app without a prefix
+app = FastAPI()
+
+@app.get("/")
+async def root_entry():
+    return {
+        "service": "nexora-backend",
+        "status": "running",
+        "env": ENV
+    }
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO if IS_PROD else logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # --- Admin Auth Guard ---
 def verify_admin(token: str | None):
     if not ADMIN_TOKEN or token != ADMIN_TOKEN:
@@ -57,19 +85,6 @@ def send_lead_email(subject: str, body: str):
         logger.info("📨 Lead notification email sent")
     except Exception as e:
         logger.error(f"❌ Failed to send lead email: {e}")
-
-# MongoDB connection
-mongo_url = os.environ.get("MONGO_URL")
-db_name = os.environ.get("DB_NAME")
-
-if not mongo_url or not db_name:
-    raise RuntimeError("MONGO_URL and DB_NAME must be set in environment variables")
-
-client = AsyncIOMotorClient(mongo_url)
-db = client[db_name]
-
-# Create the main app without a prefix
-app = FastAPI()
 
 @app.middleware("http")
 async def limit_request_size(request, call_next):
@@ -419,23 +434,16 @@ app.include_router(api_router)
 
 cors_origins = os.environ.get(
     "CORS_ORIGINS",
-    "http://localhost:3000" if not IS_PROD else ""
+    "http://localhost:3000"
 ).split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=[origin.strip() for origin in cors_origins if origin.strip()],
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO if IS_PROD else logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_check():
