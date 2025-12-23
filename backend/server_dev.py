@@ -1,109 +1,27 @@
 from fastapi import FastAPI, APIRouter, HTTPException
-from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from typing import List, Optional, Dict, Any
 import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from typing import List, Optional
-import uuid
 from datetime import datetime, timezone
-import smtplib
-from email.message import EmailMessage
-
+import uuid
 import time
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
-
 ENV = os.environ.get("ENV", "development")
 IS_PROD = ENV == "production"
 
-# --- Admin Token for Founder/Admin Dashboard ---
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")
+# --- In-memory storage for development ---
+# Note: Data resets on server restart (expected in dev)
+memory_db = {
+    "contacts": [],
+    "service_inquiries": [],
+    "newsletters": []
+}
 
-SMTP_HOST = os.environ.get("SMTP_HOST")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("SMTP_USER")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
-NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL")  # where leads are sent
-EMAIL_ENABLED = all([SMTP_HOST, SMTP_USER, SMTP_PASSWORD, NOTIFY_EMAIL])
-
-def normalize_text(value: str) -> str:
-    return value.strip().replace("\n", " ").replace("\r", " ")
-
-# --- Admin Auth Guard ---
-def verify_admin(token: str | None):
-    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
-def send_lead_email(subject: str, body: str):
-    if not EMAIL_ENABLED:
-        logger.info("📭 Email disabled — lead captured without notification")
-        return
-
-    msg = EmailMessage()
-    msg["From"] = SMTP_USER
-    msg["To"] = NOTIFY_EMAIL
-    msg["Subject"] = subject
-    msg.set_content(body)
-
-    try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.send_message(msg)
-        logger.info("📨 Lead notification email sent")
-    except Exception as e:
-        logger.error(f"❌ Failed to send lead email: {e}")
-
-# MongoDB connection
-mongo_url = os.environ.get("MONGO_URL")
-db_name = os.environ.get("DB_NAME")
-
-if not mongo_url or not db_name:
-    raise RuntimeError("MONGO_URL and DB_NAME must be set in environment variables")
-
-client = AsyncIOMotorClient(mongo_url)
-db = client[db_name]
-
-# Create the main app without a prefix
-app = FastAPI()
-
-@app.middleware("http")
-async def limit_request_size(request, call_next):
-    if request.headers.get("content-length"):
-        if int(request.headers["content-length"]) > 10_000:
-            raise HTTPException(status_code=413, detail="Request too large")
-    return await call_next(request)
-
-@app.middleware("http")
-async def log_requests(request, call_next):
-    response = await call_next(request)
-    logger.info(
-        f"{request.method} {request.url.path} → {response.status_code}"
-    )
-    return response
-
-@app.middleware("http")
-async def request_timing(request, call_next):
-    start = time.time()
-    response = await call_next(request)
-    duration = (time.time() - start) * 1000
-    logger.debug(
-        f"{request.method} {request.url.path} completed in {duration:.1f}ms"
-    )
-    return response
-
-# Create a router with the /api prefix
-api_router = APIRouter(
-    prefix="/api",
-    tags=["public"]
-)
-
-
-# Define Models
+# --- Models ---
 class ContactForm(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
@@ -115,8 +33,10 @@ class ContactForm(BaseModel):
     phone: str
     email: EmailStr
     message: str
+    notes: Optional[str] = None  # internal admin notes
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    status: str = "new"  # new, contacted, converted
+    status: str = "new"  # new, contacted, qualified, converted, archived
+    updated_at: Optional[datetime] = None
 
 class ContactFormCreate(BaseModel):
     industry: str
@@ -166,8 +86,10 @@ class AdminContact(BaseModel):
     business_type: str
     city: str
     message: str
+    notes: Optional[str] = None
     status: str
     timestamp: datetime
+    updated_at: Optional[datetime] = None
 
 class AdminServiceInquiry(BaseModel):
     id: str
@@ -178,10 +100,55 @@ class AdminServiceInquiry(BaseModel):
     message: Optional[str]
     timestamp: datetime
 
+# --- Admin Token for Founder/Admin Dashboard ---
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "dev-admin-token")
+
+# --- Admin Auth Guard ---
+def verify_admin(token: str | None):
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+def normalize_text(value: str) -> str:
+    return value.strip().replace("\n", " ").replace("\r", " ")
+
+# Create the main app without a prefix
+app = FastAPI()
+
+@app.middleware("http")
+async def limit_request_size(request, call_next):
+    if request.headers.get("content-length"):
+        if int(request.headers["content-length"]) > 10_000:
+            raise HTTPException(status_code=413, detail="Request too large")
+    return await call_next(request)
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    response = await call_next(request)
+    logger.info(
+        f"{request.method} {request.url.path} → {response.status_code}"
+    )
+    return response
+
+@app.middleware("http")
+async def request_timing(request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration = (time.time() - start) * 1000
+    logger.debug(
+        f"{request.method} {request.url.path} completed in {duration:.1f}ms"
+    )
+    return response
+
+# Create a router with the /api prefix
+api_router = APIRouter(
+    prefix="/api",
+    tags=["public"]
+)
+
 # Routes
 @api_router.get("/")
 async def root():
-    return {"message": "Welcome to Nexora API - Reimagined Intelligence"}
+    return {"message": "Welcome to Nexora API - Reimagined Intelligence (Development Mode)"}
 
 @api_router.post("/contact", response_model=ContactForm)
 async def create_contact(input: ContactFormCreate):
@@ -193,38 +160,23 @@ async def create_contact(input: ContactFormCreate):
         }
 
         # Basic duplicate protection (same email + message within 24h)
-        existing = await db.contacts.find_one({
-            "email": contact_dict["email"],
-            "message": contact_dict["message"]
-        })
+        existing = next((c for c in memory_db["contacts"] 
+                        if c["email"] == contact_dict["email"] and c["message"] == contact_dict["message"]), None)
 
         if existing:
             raise HTTPException(status_code=409, detail="Duplicate submission detected")
 
         contact_obj = ContactForm(**contact_dict)
         
-        # Convert to dict and serialize datetime to ISO string for MongoDB
+        # Convert to dict and serialize datetime to ISO string for storage
         doc = contact_obj.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
+        if doc.get('updated_at') and isinstance(doc['updated_at'], datetime):
+            doc['updated_at'] = doc['updated_at'].isoformat()
         
-        await db.contacts.insert_one(doc)
+        memory_db["contacts"].append(doc)
 
-        send_lead_email(
-            subject="New Nexora Contact Lead",
-            body=f"""
-New contact submission:
-
-Name: {contact_obj.name}
-Email: {contact_obj.email}
-Phone: {contact_obj.phone}
-Industry: {contact_obj.industry}
-Business Type: {contact_obj.business_type}
-City: {contact_obj.city}
-
-Message:
-{contact_obj.message}
-"""
-        )
+        logger.info(f"📝 New contact created: {contact_obj.name} ({contact_obj.email})")
 
         return contact_obj
     except Exception as e:
@@ -235,7 +187,7 @@ Message:
 async def get_contacts():
     """Get all contact submissions"""
     try:
-        contacts = await db.contacts.find({}, {"_id": 0}).to_list(1000)
+        contacts = memory_db["contacts"]
         
         # Convert ISO string timestamps back to datetime objects
         for contact in contacts:
@@ -243,12 +195,13 @@ async def get_contacts():
                 contact['timestamp'] = datetime.fromisoformat(
                     contact['timestamp']
                 ).replace(tzinfo=timezone.utc)
+            if contact.get('updated_at') and isinstance(contact['updated_at'], str):
+                contact['updated_at'] = datetime.fromisoformat(contact['updated_at']).replace(tzinfo=timezone.utc)
         
         return contacts
     except Exception as e:
         logger.error(f"Error fetching contacts: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch contacts")
-
 
 # --- Admin: List contacts with status filter ---
 from fastapi import Query
@@ -264,42 +217,76 @@ async def admin_get_contacts(
     verify_admin(admin_token)
 
     query = {"status": status} if status else {}
-    contacts = await db.contacts.find(query, {"_id": 0}).to_list(500)
+    contacts = [c for c in memory_db["contacts"] 
+                if all(c.get(k) == v for k, v in query.items())]
 
     for contact in contacts:
         if isinstance(contact["timestamp"], str):
             contact["timestamp"] = datetime.fromisoformat(
                 contact["timestamp"]
             ).replace(tzinfo=timezone.utc)
+        if contact.get("updated_at") and isinstance(contact["updated_at"], str):
+            contact["updated_at"] = datetime.fromisoformat(contact["updated_at"]).replace(tzinfo=timezone.utc)
+
+        # Ensure message is always present (already modeled)
 
     return contacts
 
-
 # --- Admin: Update contact status (new → contacted → converted) ---
-@api_router.patch(
+from fastapi import Body
+from fastapi import Request
+
+@api_router.api_route(
     "/admin/contacts/{contact_id}/status",
+    methods=["PATCH", "POST"],
     tags=["admin"]
 )
 async def update_contact_status(
     contact_id: str,
-    status: str,
+    request: Request,
     admin_token: Optional[str] = None
 ):
     verify_admin(admin_token)
 
-    if status not in {"new", "contacted", "converted"}:
+    payload = await request.json()
+    status = payload.get("status")
+    if status not in {"new", "contacted", "qualified", "converted", "archived"}:
         raise HTTPException(status_code=400, detail="Invalid status")
 
-    result = await db.contacts.update_one(
-        {"id": contact_id},
-        {"$set": {"status": status}}
-    )
+    for contact in memory_db["contacts"]:
+        if contact["id"] == contact_id:
+            contact["status"] = status
+            contact["updated_at"] = datetime.now(timezone.utc).isoformat()
+            return {"ok": True, "status": status}
 
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Contact not found")
+    raise HTTPException(status_code=404, detail="Contact not found")
 
-    return {"ok": True, "status": status}
+@api_router.post(
+    "/admin/contacts/{contact_id}/notes",
+    tags=["admin"]
+)
+async def update_contact_notes(
+    contact_id: str,
+    payload: Dict[str, Any] = Body(...),
+    admin_token: Optional[str] = None
+):
+    verify_admin(admin_token)
 
+    notes = payload.get("notes")
+    if notes is None:
+        raise HTTPException(status_code=400, detail="Notes are required")
+
+    for contact in memory_db["contacts"]:
+        if contact["id"] == contact_id:
+            contact["notes"] = normalize_text(notes)
+            contact["updated_at"] = datetime.now(timezone.utc).isoformat()
+            return {
+                "ok": True,
+                "notes": contact["notes"],
+                "updated_at": contact["updated_at"]
+            }
+
+    raise HTTPException(status_code=404, detail="Contact not found")
 
 # --- Admin: List service inquiries ---
 @api_router.get(
@@ -310,7 +297,7 @@ async def update_contact_status(
 async def admin_get_service_inquiries(admin_token: Optional[str] = None):
     verify_admin(admin_token)
 
-    inquiries = await db.service_inquiries.find({}, {"_id": 0}).to_list(500)
+    inquiries = memory_db["service_inquiries"]
 
     for inquiry in inquiries:
         if isinstance(inquiry["timestamp"], str):
@@ -333,22 +320,9 @@ async def create_service_inquiry(input: ServiceInquiryCreate):
         doc = inquiry_obj.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
         
-        await db.service_inquiries.insert_one(doc)
+        memory_db["service_inquiries"].append(doc)
 
-        send_lead_email(
-            subject=f"New Nexora Service Inquiry — {inquiry_obj.service}",
-            body=f"""
-New service inquiry:
-
-Name: {inquiry_obj.name}
-Email: {inquiry_obj.email}
-Phone: {inquiry_obj.phone or "—"}
-Service: {inquiry_obj.service}
-
-Message:
-{inquiry_obj.message or "—"}
-"""
-        )
+        logger.info(f"📝 New service inquiry: {inquiry_obj.service} from {inquiry_obj.name}")
 
         return inquiry_obj
     except Exception as e:
@@ -360,7 +334,7 @@ async def subscribe_newsletter(input: NewsletterCreate):
     """Subscribe to newsletter"""
     try:
         # Check if email already exists
-        existing = await db.newsletters.find_one({"email": input.email}, {"_id": 0})
+        existing = next((n for n in memory_db["newsletters"] if n["email"] == input.email), None)
         if existing:
             raise HTTPException(status_code=400, detail="Email already subscribed")
         
@@ -370,7 +344,10 @@ async def subscribe_newsletter(input: NewsletterCreate):
         doc = newsletter_obj.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
         
-        await db.newsletters.insert_one(doc)
+        memory_db["newsletters"].append(doc)
+        
+        logger.info(f"📝 New newsletter subscription: {newsletter_obj.email}")
+        
         return newsletter_obj
     except HTTPException:
         raise
@@ -382,51 +359,67 @@ async def subscribe_newsletter(input: NewsletterCreate):
 async def get_stats():
     """Get basic statistics"""
     try:
-        total_contacts = await db.contacts.count_documents({})
-        total_inquiries = await db.service_inquiries.count_documents({})
-        total_subscribers = await db.newsletters.count_documents({})
+        total_contacts = len(memory_db["contacts"])
+        total_inquiries = len(memory_db["service_inquiries"])
+        total_subscribers = len(memory_db["newsletters"])
 
-        latest_contact = await db.contacts.find_one(
-            {},
-            sort=[("timestamp", -1)],
-            projection={"_id": 0, "timestamp": 1}
-        )
+        latest_contact = max(memory_db["contacts"], 
+                           key=lambda x: x["timestamp"], 
+                           default=None)
         
         return {
             "total_contacts": total_contacts,
             "total_inquiries": total_inquiries,
             "total_subscribers": total_subscribers,
-            "latest_contact_at": latest_contact["timestamp"] if latest_contact else None
+            "latest_contact_at": latest_contact["timestamp"] if latest_contact else None,
+            "mode": "development (in-memory)"
         }
     except Exception as e:
         logger.error(f"Error fetching stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch stats")
 
+@api_router.get("/admin/stats", tags=["admin"])
+async def admin_get_stats(admin_token: Optional[str] = None):
+    verify_admin(admin_token)
+
+    return {
+        "contacts": len(memory_db["contacts"]),
+        "service_inquiries": len(memory_db["service_inquiries"]),
+        "newsletter": len(memory_db["newsletters"]),
+    }
+
 @api_router.get("/health")
 async def health_check():
     try:
-        await client.admin.command("ping")
         return {
             "status": "ok",
-            "database": "connected",
-            "service": "nexora-backend"
+            "database": "in-memory (development)",
+            "service": "nexora-backend-dev"
         }
     except Exception:
-        raise HTTPException(status_code=503, detail="Database unavailable")
+        raise HTTPException(status_code=503, detail="Service unavailable")
 
 # Include the router in the main app
 app.include_router(api_router)
 
-cors_origins = os.environ.get(
-    "CORS_ORIGINS",
-    "http://localhost:3000" if not IS_PROD else ""
-).split(",")
+cors_origins_env = os.environ.get("CORS_ORIGINS")
+
+if cors_origins_env:
+    cors_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+else:
+    # Development-safe defaults
+    cors_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://fullstack-future.preview.emergentagent.com",
+        "https://*.preview.emergentagent.com",
+    ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -439,16 +432,10 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_check():
-    try:
-        await client.admin.command("ping")
-        logger.info(
-            f"✅ Nexora backend started | env={ENV} | db=connected"
-        )
-    except Exception as e:
-        logger.error(f"❌ MongoDB connection failed on startup: {e}")
-        raise
+    logger.info(
+        f"✅ Nexora backend started (DEVELOPMENT MODE) | env={ENV} | db=in-memory"
+    )
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
-    logger.info("⏳ Shutting down Nexora backend")
-    client.close()
+async def shutdown():
+    logger.info("⏳ Shutting down Nexora backend (dev mode)")
