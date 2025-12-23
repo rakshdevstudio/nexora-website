@@ -37,11 +37,14 @@ def normalize_text(value: str) -> str:
 mongo_url = os.environ.get("MONGO_URL")
 db_name = os.environ.get("DB_NAME")
 
-if not mongo_url or not db_name:
-    raise RuntimeError("MONGO_URL and DB_NAME must be set in environment variables")
+USE_DB = bool(mongo_url and db_name)
 
-client = AsyncIOMotorClient(mongo_url)
-db = client[db_name]
+if USE_DB:
+    client = AsyncIOMotorClient(mongo_url)
+    db = client[db_name]
+else:
+    client = None
+    db = None
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -419,6 +422,13 @@ async def get_stats():
 
 @api_router.get("/health")
 async def health_check():
+    if not USE_DB:
+        return {
+            "status": "ok",
+            "database": "in-memory (development)",
+            "service": "nexora-backend-dev"
+        }
+
     try:
         await client.admin.command("ping")
         return {
@@ -426,20 +436,19 @@ async def health_check():
             "database": "connected",
             "service": "nexora-backend"
         }
-    except Exception:
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
         raise HTTPException(status_code=503, detail="Database unavailable")
 
 # Include the router in the main app
 app.include_router(api_router)
 
-cors_origins = os.environ.get(
-    "CORS_ORIGINS",
-    "http://localhost:3000"
-).split(",")
+cors_origins_env = os.environ.get("CORS_ORIGINS", "")
+cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in cors_origins if origin.strip()],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -447,6 +456,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_check():
+    if not USE_DB:
+        logger.warning("⚠️ Nexora backend started WITHOUT database (dev mode)")
+        return
+
     try:
         await client.admin.command("ping")
         logger.info(
@@ -459,4 +472,5 @@ async def startup_check():
 @app.on_event("shutdown")
 async def shutdown_db_client():
     logger.info("⏳ Shutting down Nexora backend")
-    client.close()
+    if client:
+        client.close()
