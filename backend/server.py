@@ -440,11 +440,21 @@ async def health_check():
         logger.error(f"Database health check failed: {e}")
         raise HTTPException(status_code=503, detail="Database unavailable")
 
-# Include the router in the main app
-app.include_router(api_router)
 
-cors_origins_env = os.environ.get("CORS_ORIGINS", "")
-cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+# ---- CORS CONFIG (PRODUCTION SAFE) ----
+cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://nexorair.com",
+    "https://www.nexorair.com",
+]
+
+# Optional: extend from environment variable if provided
+cors_origins_env = os.environ.get("CORS_ORIGINS")
+if cors_origins_env:
+    cors_origins.extend(
+        [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -453,6 +463,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include the router in the main app
+app.include_router(api_router)
 
 @app.on_event("startup")
 async def startup_check():
