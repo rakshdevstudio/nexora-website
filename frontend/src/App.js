@@ -336,16 +336,30 @@ if (nav) {
     setSubmitStatus(null);
 
     try {
-      await axios.post(`${API}/contact`, {
-  ...formData,
-  phone: `${formData.country_code} ${formData.phone}`
-});
+      await axios.post(
+        `${API}/contact`,
+        {
+          industry: formData.industry,
+          business_type: formData.business_type,
+          name: formData.name,
+          city: formData.city,
+          email: formData.email,
+          message: formData.message,
+          phone: `${formData.country_code} ${formData.phone}`
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          }
+        }
+      );
       setSubmitStatus('success');
       setFormData({
         industry: '',
         business_type: '',
         name: '',
         city: '',
+        country_code: '+1',
         phone: '',
         email: '',
         message: ''
