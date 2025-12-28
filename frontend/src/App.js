@@ -58,12 +58,20 @@ function App() {
 });
   const [submitStatus, setSubmitStatus] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // --- Hero cinematic entry control ---
+  const [heroReady, setHeroReady] = useState(false);
   // --- Detect /admin route ---
   useEffect(() => {
     if (window.location.pathname === '/admin') {
       setIsAdmin(true);
       document.body.classList.add('admin-mode');
     }
+  }, []);
+
+  // --- Hero initial cinematic delay ---
+  useEffect(() => {
+    const t = setTimeout(() => setHeroReady(true), 400);
+    return () => clearTimeout(t);
   }, []);
 
   // --- Auto-load admin data when token is present ---
@@ -603,16 +611,16 @@ if (nav) {
               
               {/* Desktop Menu */}
               <div className="nav-menu-desktop">
-                <button onClick={() => scrollToSection('about')} className="nav-link">About</button>
-                <button onClick={() => scrollToSection('services')} className="nav-link">Services</button>
-                <button onClick={() => scrollToSection('process')} className="nav-link">Process</button>
-                <button onClick={() => scrollToSection('clients')} className="nav-link">Clients</button>
+                <button onClick={() => scrollToSection('about')} className="nav-link">Why Nexora</button>
+                <button onClick={() => scrollToSection('services')} className="nav-link">What We Build</button>
+                <button onClick={() => scrollToSection('process')} className="nav-link">How We Work</button>
+                <button onClick={() => scrollToSection('clients')} className="nav-link">Proof</button>
                 <button 
                   onClick={() => setShowContactModal(true)}
                   className="nav-cta"
                   data-testid="nav-contact-button"
                 >
-                  Get Started
+                  Free Consultation
                 </button>
               </div>
 
@@ -625,21 +633,23 @@ if (nav) {
             {/* Mobile Menu */}
             {menuOpen && (
               <div className="nav-menu-mobile" data-testid="mobile-menu">
-                <button onClick={() => scrollToSection('about')} className="nav-mobile-link">About</button>
-                <button onClick={() => scrollToSection('services')} className="nav-mobile-link">Services</button>
-                <button onClick={() => scrollToSection('process')} className="nav-mobile-link">Process</button>
-                <button onClick={() => scrollToSection('clients')} className="nav-mobile-link">Clients</button>
-                <button onClick={() => setShowContactModal(true)} className="nav-mobile-cta">Get Started</button>
+                <button onClick={() => scrollToSection('about')} className="nav-mobile-link">Why Nexora</button>
+                <button onClick={() => scrollToSection('services')} className="nav-mobile-link">What We Build</button>
+                <button onClick={() => scrollToSection('process')} className="nav-mobile-link">How We Work</button>
+                <button onClick={() => scrollToSection('clients')} className="nav-mobile-link">Proof</button>
+                <button onClick={() => setShowContactModal(true)} className="nav-mobile-cta">Free Consultation</button>
               </div>
             )}
           </nav>
 
       {/* Hero Section */}
-      <section className="hero-section" data-testid="hero-section">
+      <section
+        className="hero-section"
+        data-testid="hero-section"
+      >
         <div className="hero-light-layer" />
         <div className="hero-light-layer hero-light-layer-secondary" />
         {/* Background with subtle depth */}
-        <div className="hero-background"></div>
         {/* Background wordmark */}
         <div className="hero-wordmark" aria-hidden="true">
           INTELLIGENCE&nbsp;REIMAGINED
@@ -647,44 +657,46 @@ if (nav) {
 
         <div className="hero-content">
           {/* Authority badge */}
+          {/* Audience anchor */}
+          <div
+            className={`hero-audience-anchor ${heroReady ? 'hero-audience-enter' : ''}`}
+            aria-label="Target audience"
+          >
+            For Founders & Growing Businesses
+            <span></span>
+            High‑performance websites
+          </div>
           
 
           {/* Headline */}
-          <h1 className="hero-title">
-            <span style={{ animationDelay: "0.1s" }}>Enterprise</span>{" "}
-            <span
-              className="nexora-emphasis"
-              style={{ animationDelay: "0.25s" }}
-            >
-              Intelligence.
+          <h1 className={`hero-title ${heroReady ? 'hero-title-enter' : ''}`}>
+            <span style={{ animationDelay: "0.1s" }}>High‑performance</span>{" "}
+            <span className="nexora-emphasis" style={{ animationDelay: "0.25s" }}>
+              websites
             </span>{" "}
-            <span
-              className="nexora-emphasis"
-              style={{ animationDelay: "0.4s" }}
-            >
-              Engineered
+            <span className="nexora-emphasis" style={{ animationDelay: "0.4s" }}>
+              engineered
             </span>{" "}
-            <span style={{ animationDelay: "0.55s" }}>to last</span>
+            <span style={{ animationDelay: "0.55s" }}>to convert</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="hero-subtitle">
-            Nexora is an AI-first, full-stack technology company designing and engineering
-            production-grade systems built to scale.
+          <p className={`hero-subtitle ${heroReady ? 'hero-subtitle-enter' : ''}`}>
+            We design and build fast, scalable, conversion‑focused websites for businesses that care about performance, credibility, and long‑term growth — not templates or throwaway designs.
           </p>
 
           <p className="hero-clarifier">
-  AI systems, full-stack platforms, and digital infrastructure — <strong>built for real-world scale</strong>.
-</p>
+            From landing pages and marketing sites to complex web platforms, we build websites that load fast, scale cleanly, and support real business goals.
+          </p>
 
           {/* Primary actions */}
-          <div className="hero-actions">
+          <div className={`hero-actions ${heroReady ? 'hero-actions-enter' : ''}`}>
             <button
               onClick={() => setShowContactModal(true)}
               className="btn-primary"
               data-testid="hero-get-started-button"
             >
-              Start a conversation
+              Get a high‑performance website
               <ArrowRight className="btn-icon" />
             </button>
 
@@ -693,8 +705,19 @@ if (nav) {
               className="btn-secondary"
               data-testid="hero-learn-more-button"
             >
-              Explore capabilities
+              View our approach
             </button>
+          </div>
+          {/* Credibility strip */}
+          <div
+            className={`hero-trust-strip ${heroReady ? 'hero-trust-enter' : ''}`}
+            aria-label="Trust indicators"
+          >
+            <div className="trust-item">Production‑grade systems</div>
+            <div className="trust-divider" />
+            <div className="trust-item">Enterprise security</div>
+            <div className="trust-divider" />
+            <div className="trust-item">Long‑term architecture</div>
           </div>
           {/* Scroll indicator */}
           <div className="hero-scroll-indicator" aria-hidden="true">
@@ -798,22 +821,21 @@ if (nav) {
       <section id="services" className="section-container section-dark" data-testid="services-section">
         <div className="section-content">
           <div className="section-header">
-            <h2 className="section-title">Core capabilities</h2>
-            <p className="section-subtitle">End-to-end solutions for intelligent systems</p>
+            <p className="section-subtitle">Conversion‑focused websites and web platforms built for speed, scale, and credibility</p>
           </div>
 
           <div className="services-grid">
             <div className="service-card service-card-featured" data-aos="fade-up" data-aos-delay="0">
-              <h3 className="service-title">AI & Machine Learning</h3>
-              <p className="service-eyebrow">Flagship capability</p>
+              <h3 className="service-title">High‑performance websites</h3>
+              <p className="service-eyebrow">Primary offering</p>
               <p className="service-description">
-                We build AI systems that work reliably in real production — helping teams automate decisions, improve outcomes, and scale intelligence across the organization.
+                We design and engineer fast, conversion‑focused websites for businesses where performance, trust, and scalability directly impact revenue.
               </p>
               <ul className="service-features">
-                <li><Check className="feature-check" />Large Language Model Integration</li>
-                <li><Check className="feature-check" />Predictive Analytics & Forecasting</li>
-                <li><Check className="feature-check" />Computer Vision & NLP</li>
-                <li><Check className="feature-check" />Intelligent Process Automation</li>
+                <li><Check className="feature-check" />Core Web Vitals & performance optimization</li>
+                <li><Check className="feature-check" />Conversion‑focused UX & information architecture</li>
+                <li><Check className="feature-check" />SEO‑ready, scalable frontends</li>
+                <li><Check className="feature-check" />Production‑grade hosting & deployment</li>
               </ul>
               <button onClick={() => setShowContactModal(true)} className="service-link" data-testid="ai-service-button">
                 Learn more <ChevronRight className="w-4 h-4" />
@@ -821,9 +843,9 @@ if (nav) {
             </div>
 
             <div className="service-card" data-aos="fade-up" data-aos-delay="100">
-              <h3 className="service-title">Full-Stack Engineering</h3>
+              <h3 className="service-title">Web platforms & dashboards</h3>
               <p className="service-description">
-                We design and build complete software systems that are fast, secure, and built to scale with real users and real demand.
+                Custom web platforms, internal tools, and dashboards built to support real workflows, real users, and long‑term growth.
               </p>
               <ul className="service-features">
                 <li><Check className="feature-check" />Cloud-Native Architecture</li>
@@ -837,9 +859,9 @@ if (nav) {
             </div>
 
             <div className="service-card" data-aos="fade-up" data-aos-delay="200">
-              <h3 className="service-title">Mobile Platforms</h3>
+              <h3 className="service-title">Progressive web & app‑like experiences</h3>
               <p className="service-description">
-                High‑quality mobile applications that bring intelligent experiences directly to users, built for reliability and performance.
+                App‑like web experiences designed for speed, reliability, and seamless use across devices — without unnecessary complexity.
               </p>
               <ul className="service-features">
                 <li><Check className="feature-check" />iOS & Android Development</li>
@@ -853,9 +875,9 @@ if (nav) {
             </div>
 
             <div className="service-card" data-aos="fade-up" data-aos-delay="300">
-              <h3 className="service-title">Infrastructure & DevOps</h3>
+              <h3 className="service-title">Website infrastructure & reliability</h3>
               <p className="service-description">
-                Resilient cloud infrastructure and deployment systems that keep your products secure, scalable, and always available.
+                Secure, scalable infrastructure that keeps your website fast, available, and resilient under real‑world traffic.
               </p>
               <ul className="service-features">
                 <li><Check className="feature-check" />Cloud Architecture (AWS, Azure, GCP)</li>
@@ -871,22 +893,165 @@ if (nav) {
         </div>
       </section>
 
+      {/* Website Proof Section */}
+      <section className="website-proof-section" data-testid="website-proof-section">
+        <div className="website-proof-header">
+          <div className="website-proof-eyebrow">Website performance proof</div>
+          <h2 className="website-proof-title">
+            Websites built to convert — and scale
+          </h2>
+          <p className="website-proof-subtitle">
+            Real outcomes from production websites engineered for speed,
+            credibility, and measurable business impact.
+          </p>
+        </div>
+
+        <div className="website-proof-grid">
+          <div className="website-proof-card" data-aos="fade-up">
+            <div className="proof-metric">‑62%</div>
+            <div className="proof-label">Page load time</div>
+            <p className="proof-description">
+              Reduced average load time from 3.8s to 1.4s by optimizing
+              frontend architecture, assets, and deployment strategy.
+            </p>
+          </div>
+
+          <div className="website-proof-card" data-aos="fade-up" data-aos-delay="100">
+            <div className="proof-metric">+41%</div>
+            <div className="proof-label">Conversion rate</div>
+            <p className="proof-description">
+              Improved lead conversion through performance tuning,
+              clearer information hierarchy, and UX refinements.
+            </p>
+          </div>
+
+          <div className="website-proof-card" data-aos="fade-up" data-aos-delay="200">
+            <div className="proof-metric">99.9%</div>
+            <div className="proof-label">Uptime</div>
+            <p className="proof-description">
+              Production-grade hosting and monitoring to ensure reliability
+              under real traffic and campaign spikes.
+            </p>
+          </div>
+        </div>
+
+        <div className="website-proof-cta">
+          <button
+            onClick={() => setShowContactModal(true)}
+            className="btn-primary"
+            data-testid="website-proof-cta-button"
+          >
+            Get a website performance review
+          </button>
+        </div>
+      </section>
+
+      {/* Website FAQ Section */}
+      <section className="website-faq-section" data-testid="website-faq-section">
+        <div className="website-faq-header">
+          <div className="website-faq-eyebrow">Website clarity</div>
+          <h2 className="website-faq-title">
+            Common questions before building a website
+          </h2>
+          <p className="website-faq-subtitle">
+            Clear answers to what founders and businesses usually want to know
+            before investing in a high‑performance website.
+          </p>
+        </div>
+
+        <div className="website-faq-list">
+          <div className="website-faq-item">
+            <h4>How is Nexora different from typical web agencies?</h4>
+            <p>
+              We engineer websites like production systems — focusing on
+              performance, scalability, security, and long‑term maintainability,
+              not just visual design.
+            </p>
+          </div>
+
+          <div className="website-faq-item">
+            <h4>Do you work with existing websites or only new builds?</h4>
+            <p>
+              Both. We frequently redesign, optimize, and re‑architect existing
+              websites to improve speed, conversion, and reliability.
+            </p>
+          </div>
+
+          <div className="website-faq-item">
+            <h4>Will my website be SEO‑friendly?</h4>
+            <p>
+              Yes. Every website is built with clean architecture, fast load
+              times, and SEO‑ready structure aligned with modern search best
+              practices.
+            </p>
+          </div>
+
+          <div className="website-faq-item">
+            <h4>What happens after the website is launched?</h4>
+            <p>
+              We don’t disappear after launch. We support iteration,
+              performance monitoring, and future enhancements as your business
+              grows.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Soft Mid-Page CTA */}
       <section className="section-container section-soft-cta">
         <div className="section-content soft-cta-content">
-          <h3 className="soft-cta-title">Talk to an architect</h3>
+          <h3 className="soft-cta-title">Speak with a senior engineer</h3>
           <p className="soft-cta-subtitle">
-            No sales. Just a technical conversation about your systems, constraints, and goals.
+            No sales pitch. Just a focused discussion on feasibility, risks, and system direction.
           </p>
           <button
             onClick={() => setShowContactModal(true)}
             className="btn-secondary"
           >
-            Start a technical conversation 
+            Schedule a free consultation
           </button>
         </div>
       </section>
+{/* System Architecture Section */}
+<section className="architecture-section" data-testid="architecture-section">
+  <div className="architecture-header">
+    <div className="architecture-eyebrow">System architecture</div>
+    <h2 className="architecture-title">
+      How Nexora builds production AI systems
+    </h2>
+    <p className="architecture-subtitle">
+      A layered, battle-tested architecture designed for reliability,
+      security, and long-term evolution.
+    </p>
+  </div>
 
+  <div className="architecture-stack">
+    <div className="architecture-layer">
+      <span className="layer-label">Experience Layer</span>
+      <span className="layer-desc">Web apps · Mobile apps · Dashboards</span>
+    </div>
+
+    <div className="architecture-layer">
+      <span className="layer-label">Application Layer</span>
+      <span className="layer-desc">APIs · Business logic · Workflow engines</span>
+    </div>
+
+    <div className="architecture-layer architecture-layer-highlight">
+      <span className="layer-label">Intelligence Layer</span>
+      <span className="layer-desc">LLMs · AI agents · Decision systems</span>
+    </div>
+
+    <div className="architecture-layer">
+      <span className="layer-label">Data Layer</span>
+      <span className="layer-desc">Databases · Vector stores · Event streams</span>
+    </div>
+
+    <div className="architecture-layer">
+      <span className="layer-label">Infrastructure Layer</span>
+      <span className="layer-desc">Cloud · Security · Observability · CI/CD</span>
+    </div>
+  </div>
+</section>
       {/* Tech Stack */}
       <section className="section-container" data-testid="tech-stack-section">
         <div className="section-content">
@@ -1018,6 +1183,58 @@ if (nav) {
         </div>
       </section>
 
+      {/* Execution Proof Section */}
+      <section className="execution-section" data-testid="execution-section">
+  <div className="execution-header">
+    <div className="execution-eyebrow">Execution at real scale</div>
+    <h2 className="execution-title">
+      Systems engineered for production environments
+    </h2>
+    <p className="execution-subtitle">
+      Not experiments. Not demos. Architectures designed to survive
+      real traffic, real data, and real business risk.
+    </p>
+  </div>
+
+  <div className="execution-grid">
+    <div className="execution-card" data-aos="fade-up">
+      <div className="execution-metric">99.9%</div>
+      <div className="execution-label">Production uptime</div>
+      <p className="execution-description">
+        Mission-critical systems designed for reliability,
+        observability, and fault tolerance under real traffic.
+      </p>
+    </div>
+
+    <div className="execution-card" data-aos="fade-up" data-aos-delay="100">
+      <div className="execution-metric">10M<span>+</span></div>
+      <div className="execution-label">Events processed daily</div>
+      <p className="execution-description">
+        Architectures built to handle sustained high-volume workloads
+        without performance degradation.
+      </p>
+    </div>
+
+    <div className="execution-card" data-aos="fade-up" data-aos-delay="200">
+      <div className="execution-metric">Enterprise-grade</div>
+      <div className="execution-label">Security & compliance</div>
+      <p className="execution-description">
+        Secure-by-design systems following best practices for data
+        protection, access control, and compliance readiness.
+      </p>
+    </div>
+
+    <div className="execution-card" data-aos="fade-up" data-aos-delay="300">
+      <div className="execution-metric">Long-term</div>
+      <div className="execution-label">System ownership</div>
+      <p className="execution-description">
+        Systems designed to evolve over years — not short-lived
+        prototypes or throwaway builds.
+      </p>
+    </div>
+  </div>
+</section>
+
       {/* Testimonials */}
       <section className="section-container section-dark" data-testid="testimonials-section">
         <div className="section-content">
@@ -1045,6 +1262,55 @@ if (nav) {
         </div>
       </section>
 
+      {/* Engagement Clarity Section */}
+<section className="engagement-section" data-testid="engagement-section">
+  <div className="engagement-header">
+    <div className="engagement-eyebrow">How engagement starts</div>
+    <h2 className="engagement-title">
+      A conversation — not a sales call
+    </h2>
+    <p className="engagement-subtitle">
+      We start with a focused technical discussion to understand your system,
+      constraints, and goals. No pitches. No pressure.
+    </p>
+  </div>
+
+  <div className="engagement-steps">
+    <div className="engagement-step">
+      <div className="step-number">01</div>
+      <div className="step-content">
+        <h4>Initial technical conversation</h4>
+        <p>
+          A senior engineer discusses your problem space, architecture,
+          and business context — confidentially.
+        </p>
+      </div>
+    </div>
+
+    <div className="engagement-step">
+      <div className="step-number">02</div>
+      <div className="step-content">
+        <h4>Feasibility & system direction</h4>
+        <p>
+          We outline possible architectures, risks, and trade-offs —
+          even if we don’t work together.
+        </p>
+      </div>
+    </div>
+
+    <div className="engagement-step">
+      <div className="step-number">03</div>
+      <div className="step-content">
+        <h4>Clear next steps</h4>
+        <p>
+          You leave with clarity: technical direction, scope,
+          and whether Nexora is the right partner.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
       {/* CTA Section */}
       <section
         className="section-container cta-section"
@@ -1064,7 +1330,7 @@ if (nav) {
             className="btn-primary btn-large"
             data-testid="cta-button"
           >
-            Start a conversation
+            Schedule a free consultation
             <ArrowRight className="btn-icon" />
           </button>
         </div>
@@ -1088,10 +1354,18 @@ if (nav) {
             <div className="footer-links">
               <div className="footer-column">
                 <h4 className="footer-heading">Capabilities</h4>
-                <button onClick={() => scrollToSection('services')} className="footer-link">AI & Machine Learning</button>
-                <button onClick={() => scrollToSection('services')} className="footer-link">Full-Stack Engineering</button>
-                <button onClick={() => scrollToSection('services')} className="footer-link">Mobile Platforms</button>
-                <button onClick={() => scrollToSection('services')} className="footer-link">Infrastructure</button>
+                <button onClick={() => scrollToSection('services')} className="footer-link">
+                  High‑performance websites
+                </button>
+                <button onClick={() => scrollToSection('services')} className="footer-link">
+                  Full‑stack web platforms
+                </button>
+                <button onClick={() => scrollToSection('services')} className="footer-link">
+                  AI‑powered automation
+                </button>
+                <button onClick={() => scrollToSection('services')} className="footer-link">
+                  Scalable infrastructure
+                </button>
               </div>
 
               <div className="footer-column">
@@ -1110,7 +1384,7 @@ if (nav) {
           </div>
 
           <div className="footer-bottom">
-            <p>&copy; 2025 Nexora. All rights reserved.</p>
+            <p>&copy; 2022 Nexora. All rights reserved.</p>
           </div>
         </div>
       </footer>
