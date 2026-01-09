@@ -25,7 +25,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   // --- Admin state ---
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminToken, setAdminToken] = useState('dev-admin-token');
+  const [adminToken, setAdminToken] = useState('9c6be72247bd9b60b95142c2b2d7f645eb92311d780396e985de467cd1ab7810');
   const [adminData, setAdminData] = useState({
     contacts: [],
     inquiries: [],
@@ -100,8 +100,12 @@ function App() {
       return;
     }
     console.log("Admin API base:", API);
+    const adminToken = "9c6be72247bd9b60b95142c2b2d7f645eb92311d780396e985de467cd1ab7810";
+
     const config = {
-      headers: { Authorization: `Bearer ${adminToken}` }
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+      },
     };
     try {
       const [contacts, inquiries, stats] = await Promise.all([
@@ -139,6 +143,7 @@ function App() {
 
     try {
       setUpdatingStatus(true);
+      const adminToken = "9c6be72247bd9b60b95142c2b2d7f645eb92311d780396e985de467cd1ab7810";
 
       await axios.post(
         `${API}/admin/contacts/${contactId}/status`,
