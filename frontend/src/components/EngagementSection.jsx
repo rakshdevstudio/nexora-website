@@ -3,8 +3,23 @@ import AOS from 'aos';
 
 const EngagementSection = () => {
   useEffect(() => {
-    // Refresh AOS animations when component mounts
-    AOS.refresh();
+    // Refresh AOS animations when component mounts (non-critical)
+    function refreshAOS() {
+      if (typeof AOS !== 'undefined' && AOS.refresh) {
+        AOS.refresh();
+      }
+    }
+    
+    // Wait for AOS to be initialized if needed
+    if (typeof AOS !== 'undefined' && AOS.refresh) {
+      refreshAOS();
+    } else {
+      // Retry after a short delay if AOS isn't ready yet
+      const retryTimer = setTimeout(() => {
+        refreshAOS();
+      }, 500);
+      return () => clearTimeout(retryTimer);
+    }
   }, []);
 
   return (

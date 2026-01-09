@@ -159,14 +159,32 @@ function App() {
 
   useEffect(() => {
     console.log("Using backend:", BACKEND_URL);
-    // Initialize AOS
-    AOS.init({
-      duration: 1000,
-      once: true,
-      easing: 'ease-out-cubic',
-      offset: 120,
-      delay: 50
-    });
+    // Initialize AOS after page content renders (non-critical)
+    function initAOS() {
+      if (typeof AOS !== 'undefined') {
+        AOS.init({
+          duration: 1000,
+          once: true,
+          easing: 'ease-out-cubic',
+          offset: 120,
+          delay: 50
+        });
+      }
+    }
+    
+    // Use requestIdleCallback to load AOS after page renders
+    if (window.requestIdleCallback) {
+      requestIdleCallback(initAOS, { timeout: 2000 });
+    } else {
+      // Fallback: wait for DOMContentLoaded or use setTimeout
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(initAOS, 100);
+      } else {
+        window.addEventListener('DOMContentLoaded', () => {
+          setTimeout(initAOS, 100);
+        });
+      }
+    }
 
     // --- Enhanced scroll observer ---
     const lastScrollY = { current: window.scrollY };
@@ -228,17 +246,17 @@ if (nav) {
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // Cursor follow logic
+    // Cursor follow logic (using transform for composited animations)
     const cursor = document.querySelector('.custom-cursor');
     const ring = document.querySelector('.custom-cursor-ring');
 
     const moveCursor = (e) => {
       if (!cursor || !ring) return;
       const { clientX, clientY } = e;
-      cursor.style.left = `${clientX}px`;
-      cursor.style.top = `${clientY}px`;
-      ring.style.left = `${clientX}px`;
-      ring.style.top = `${clientY}px`;
+      // Use CSS custom properties and transform to avoid layout recalculation
+      // Store position in CSS variables so hover states can add scale without conflict
+      document.documentElement.style.setProperty('--cursor-x', `${clientX}px`);
+      document.documentElement.style.setProperty('--cursor-y', `${clientY}px`);
     };
 
     window.addEventListener('mousemove', moveCursor);

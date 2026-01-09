@@ -33,6 +33,7 @@ body {
   --cursor-y: 50vh;
   --hero-parallax: 0px;
 }
+
 /* ========== CURSOR MICRO-INTERACTION ========== */
 .custom-cursor {
   position: fixed;
@@ -44,10 +45,13 @@ body {
   background: rgba(255, 255, 255, 0.85);
   pointer-events: none;
   z-index: 9999;
-  transform: translate(-50%, -50%);
+  will-change: transform;
   transition:
-    transform 0.15s ease-out,
-    opacity 0.25s ease;
+    opacity 0.25s ease,
+    transform 0.15s ease-out;
+  /* Use CSS variables for positioning - avoids layout recalculation */
+  /* Chain transforms: first position using CSS variables, then center with -50%, -50% */
+  transform: translate(var(--cursor-x, 50vw), var(--cursor-y, 50vh)) translate(-50%, -50%);
 }
 
 .custom-cursor-ring {
@@ -60,10 +64,13 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.15);
   pointer-events: none;
   z-index: 9998;
-  transform: translate(-50%, -50%);
+  will-change: transform;
   transition:
-    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.35s ease;
+    opacity 0.35s ease,
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Use CSS variables for positioning - avoids layout recalculation */
+  /* Chain transforms: first position using CSS variables, then center with -50%, -50% */
+  transform: translate(var(--cursor-x, 50vw), var(--cursor-y, 50vh)) translate(-50%, -50%);
 }
 /* ========== GLOBAL CLICK GLOW ========== */
 .click-glow {
@@ -85,14 +92,16 @@ body {
   filter: blur(1.2px);
 }
 
+/* Cursor hover scale - uses CSS variables for positioning, adds scale */
+/* Chain transforms: position, center, then scale */
 a:hover ~ .custom-cursor,
 button:hover ~ .custom-cursor {
-  transform: translate(-50%, -50%) scale(1.4);
+  transform: translate(var(--cursor-x, 50vw), var(--cursor-y, 50vh)) translate(-50%, -50%) scale(1.4);
 }
 
 a:hover ~ .custom-cursor-ring,
 button:hover ~ .custom-cursor-ring {
-  transform: translate(-50%, -50%) scale(1.6);
+  transform: translate(var(--cursor-x, 50vw), var(--cursor-y, 50vh)) translate(-50%, -50%) scale(1.6);
   opacity: 0.6;
 }
 
@@ -147,7 +156,8 @@ a {
   transition:
     background 0.35s ease,
     box-shadow 0.35s ease,
-    border-color 0.35s ease;
+    border-color 0.35s ease,
+    backdrop-filter 0.35s ease;
 }
 
 .nav-content {
@@ -232,7 +242,9 @@ a {
   font-size: 14px;
   font-weight: 500;
   border-radius: 7px;
-  transition: all 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   letter-spacing: -0.005em;
 }
 
@@ -905,7 +917,13 @@ body.scroll-started .hero-scroll-indicator::after {
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    backdrop-filter 0.3s ease;
   position: relative;
   opacity: 0.82;
   transform: translateY(8px);
@@ -1123,7 +1141,12 @@ body.scroll-started .hero-scroll-indicator::after {
   font-size: 14px;
   font-weight: 400;
   color: #999999;
-  transition: all 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease;
   letter-spacing: -0.005em;
   position: relative;
   box-shadow:
@@ -1232,7 +1255,11 @@ body.scroll-started .hero-scroll-indicator::after {
   background: #0e0e0e;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.03);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .client-card:hover {
@@ -2038,7 +2065,10 @@ body.scroll-started .hero-scroll-indicator::after {
   color: #ffffff;
   font-size: 14px;
   font-family: inherit;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   letter-spacing: -0.005em;
 }
 
@@ -2678,14 +2708,7 @@ body.scroll-slow .tech-stack-grid {
   margin-bottom: 24px;
 }
 
-/* Nav micro-behavior */
-.nav-bar {
-  transition:
-    background 0.3s ease,
-    box-shadow 0.3s ease,
-    padding 0.25s ease,
-    backdrop-filter 0.3s ease;
-}
+/* Nav micro-behavior - transitions defined in main .nav-bar rule above */
 
 .nav-bar.nav-elevated {
   backdrop-filter: blur(10px);
@@ -2694,6 +2717,7 @@ body.scroll-slow .tech-stack-grid {
 }
 
 .nav-bar.nav-compressed {
+  /* Padding changes are not animated to avoid layout recalculation */
   padding-top: 10px;
   padding-bottom: 10px;
 }
@@ -2866,7 +2890,9 @@ body.admin-mode .app-container {
   color: #9ca3af;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
   white-space: nowrap;
   line-height: 1.2; /* ⬅️ SAFE line height */
 }
@@ -2964,13 +2990,12 @@ body.admin-mode .app-container {
 
   transition:
     opacity 0.35s ease,
-    transform 0.45s cubic-bezier(0.4,0,0.2,1),
-    max-height 0.5s cubic-bezier(0.4,0,0.2,1);
+    transform 0.45s cubic-bezier(0.4,0,0.2,1);
 }
 
 .admin-detail-panel.is-collapsed {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(10px) scaleY(0.98);
   max-height: 0;
   padding: 0;
   border-color: transparent;
