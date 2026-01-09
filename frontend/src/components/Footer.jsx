@@ -22,7 +22,7 @@ const Footer = ({ scrollToSection }) => {
 
           <div className="footer-links">
             <div className="footer-column">
-              <h4 className="footer-heading">Capabilities</h4>
+              <h3 className="footer-heading">Capabilities</h3>
               <button onClick={() => scrollToSection('services')} className="footer-link">
                 High‑performance websites
               </button>
@@ -38,14 +38,14 @@ const Footer = ({ scrollToSection }) => {
             </div>
 
             <div className="footer-column">
-              <h4 className="footer-heading">Company</h4>
+              <h3 className="footer-heading">Company</h3>
               <button onClick={() => scrollToSection('about')} className="footer-link">About</button>
               <button onClick={() => scrollToSection('clients')} className="footer-link">Case Studies</button>
               <button onClick={() => scrollToSection('process')} className="footer-link">Approach</button>
             </div>
 
             <div className="footer-column">
-              <h4 className="footer-heading">Contact</h4>
+              <h3 className="footer-heading">Contact</h3>
               <div className="footer-contact">info@nexorair.com</div>
               <div className="footer-contact">Bengaluru, India</div>
             </div>
