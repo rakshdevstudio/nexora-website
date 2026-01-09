@@ -74,9 +74,15 @@ logger = logging.getLogger(__name__)
 
 # --- Admin Auth Guard ---
 def verify_admin(query_token: str | None, auth_header: str | None = None):
+    """
+    Admin guard that:
+    - Reads token from Authorization header (preferred) or query string.
+    - Production: Enforces ADMIN_TOKEN if set.
+    - Allows dev-admin-token only if ADMIN_TOKEN is missing.
+    """
     token = None
-    
-    # 1. Extract token from Authorization header
+
+    # 1) Read Authorization header
     if auth_header:
         parts = auth_header.split()
         if len(parts) == 2 and parts[0].lower() == "bearer":
@@ -84,7 +90,7 @@ def verify_admin(query_token: str | None, auth_header: str | None = None):
         else:
             token = auth_header
 
-    # 2. Fallback to query param
+    # 2) Fallback to query param
     if not token and query_token:
         token = query_token
 
@@ -94,17 +100,21 @@ def verify_admin(query_token: str | None, auth_header: str | None = None):
     env = os.environ.get("NODE_ENV") or ENV or "development"
     admin_env_token = ADMIN_TOKEN
 
+    # --- PRODUCTION ---
     if env == "production":
+        # If ADMIN_TOKEN exists, enforce it strictly
         if admin_env_token:
             if token != admin_env_token:
                 raise HTTPException(status_code=401, detail="Unauthorized")
             return
 
+        # If ADMIN_TOKEN missing, allow dev token temporarily
         if token == "dev-admin-token":
             return
 
         raise HTTPException(status_code=401, detail="Unauthorized")
 
+    # --- DEVELOPMENT ---
     if token == "dev-admin-token":
         return
 
