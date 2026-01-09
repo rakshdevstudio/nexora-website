@@ -12,7 +12,7 @@ const AdminLogin = ({ apiBaseUrl }) => {
 
     useEffect(() => {
         // If already logged in, redirect to dashboard
-        const storedToken = localStorage.getItem('admin_token');
+        const storedToken = sessionStorage.getItem('admin_token');
         if (storedToken) {
             navigate('/admin/dashboard');
         }
@@ -30,18 +30,21 @@ const AdminLogin = ({ apiBaseUrl }) => {
         setIsLoading(true);
 
         try {
-            // Verify token by making a lightweight request (e.g., stats)
+            // Verify token by making a lightweight request
+            // Explicitly set the Authorization header
             await axios.get(`${apiBaseUrl}/admin/verify`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
 
-            // If successful, store token and redirect
-            localStorage.setItem('admin_token', token);
+            // If successful, store token in sessionStorage and redirect
+            sessionStorage.setItem('admin_token', token);
             navigate('/admin/dashboard');
         } catch (err) {
             console.error("Login failed:", err);
-            // Differentiate between network error and auth error if possible, but for security generic is okay
-            setError('Invalid token or server error');
+            sessionStorage.removeItem('admin_token'); // Clear any stale state
+            setError('Invalid admin credentials');
         } finally {
             setIsLoading(false);
         }

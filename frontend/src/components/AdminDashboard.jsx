@@ -38,7 +38,7 @@ const AdminDashboard = ({ apiBaseUrl }) => {
         );
 
     useEffect(() => {
-        const token = localStorage.getItem('admin_token');
+        const token = sessionStorage.getItem('admin_token');
         if (!token) {
             window.location.href = '/admin'; // Simple redirect if not authenticated
             return;
@@ -69,7 +69,7 @@ const AdminDashboard = ({ apiBaseUrl }) => {
             console.error("Admin load error:", error);
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                 alert("Session expired or invalid token.");
-                localStorage.removeItem('admin_token');
+                sessionStorage.removeItem('admin_token');
                 window.location.href = '/admin';
             }
         }
@@ -78,7 +78,7 @@ const AdminDashboard = ({ apiBaseUrl }) => {
     const updateContactStatus = async (contactId, nextStatus) => {
         if (!contactId) return;
 
-        const token = localStorage.getItem('admin_token');
+        const token = sessionStorage.getItem('admin_token');
         if (!token) return;
 
         try {
@@ -113,7 +113,7 @@ const AdminDashboard = ({ apiBaseUrl }) => {
     const saveNotes = async () => {
         if (!selectedContact?.id) return;
 
-        const token = localStorage.getItem('admin_token');
+        const token = sessionStorage.getItem('admin_token');
         if (!token) return;
 
         try {
@@ -162,7 +162,7 @@ const AdminDashboard = ({ apiBaseUrl }) => {
                         className="btn-secondary"
                         style={{ padding: '8px 16px', fontSize: '13px' }}
                         onClick={() => {
-                            localStorage.removeItem('admin_token');
+                            sessionStorage.removeItem('admin_token');
                             window.location.href = '/admin';
                         }}
                     >
