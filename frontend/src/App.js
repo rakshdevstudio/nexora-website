@@ -100,11 +100,11 @@ function App() {
       return;
     }
     console.log("Admin API base:", API);
-    const adminToken = "9c6be72247bd9b60b95142c2b2d7f645eb92311d780396e985de467cd1ab7810";
+    const prodToken = "9c6be72247bd9b60b95142c2b2d7f645eb92311d780396e985de467cd1ab7810";
 
     const config = {
       headers: {
-        Authorization: `Bearer ${adminToken}`,
+        Authorization: `Bearer ${prodToken}`,
       },
     };
     try {
@@ -143,12 +143,12 @@ function App() {
 
     try {
       setUpdatingStatus(true);
-      const adminToken = "9c6be72247bd9b60b95142c2b2d7f645eb92311d780396e985de467cd1ab7810";
+      const prodToken = "9c6be72247bd9b60b95142c2b2d7f645eb92311d780396e985de467cd1ab7810";
 
       await axios.post(
         `${API}/admin/contacts/${contactId}/status`,
         { status: nextStatus },
-        { headers: { Authorization: `Bearer ${adminToken}` } }
+        { headers: { Authorization: `Bearer ${prodToken}` } }
       );
 
       // Update list immediately
