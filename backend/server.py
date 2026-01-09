@@ -112,16 +112,23 @@ def verify_admin(query_token: str | None, auth_header: str | None = None):
     admin_env_token = ADMIN_TOKEN
 
     if env == "production":
-        # Production: only the configured ADMIN_TOKEN is valid.
-        if not admin_env_token:
-            logger.error("Admin auth failed: ADMIN_TOKEN not configured in production")
-            raise HTTPException(status_code=401, detail="Unauthorized")
-        if token != admin_env_token:
-            logger.warning("Admin auth failed: invalid or expired token (production)")
-            raise HTTPException(status_code=401, detail="Unauthorized")
+        # Production:
+        # If ADMIN_TOKEN is set, enforce it.
+        # If ADMIN_TOKEN is missing (misconfigured), temporarily allow dev token.
+        if admin_env_token:
+            if token != admin_env_token:
+                logger.warning("Admin auth failed: invalid token (production)")
+                raise HTTPException(status_code=401, detail="Unauthorized")
+            logger.info("Admin auth success: matched ADMIN_TOKEN (production)")
+            return
 
-        logger.info("Admin auth success: matched ADMIN_TOKEN (production)")
-        return
+        # Fallback when ADMIN_TOKEN is not configured
+        if token == "dev-admin-token":
+            logger.warning("⚠️ ADMIN_TOKEN missing in production — allowing dev token temporarily")
+            return
+
+        logger.error("Admin auth failed: ADMIN_TOKEN not configured and token invalid")
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
     # Non-production: allow either ADMIN_TOKEN (if set) or "dev-admin-token".
     if token == "dev-admin-token":
