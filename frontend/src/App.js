@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import '@/App.css';
 import axios from 'axios';
 import AOS from 'aos';
@@ -6,6 +6,12 @@ import 'aos/dist/aos.css';
 import { Menu, X, ChevronRight, ArrowRight, Check, Send, CheckCircle } from 'lucide-react';
 
 import nexoraLogo from "./assets/Nexora transparent.PNG";
+
+// Lazy-loaded components for non-critical sections
+const ArchitectureSection = lazy(() => import('./components/ArchitectureSection'));
+const TestimonialsSection = lazy(() => import('./components/TestimonialsSection'));
+const EngagementSection = lazy(() => import('./components/EngagementSection'));
+const Footer = lazy(() => import('./components/Footer'));
 
 const BACKEND_URL =
   window.location.hostname === "localhost"
@@ -418,7 +424,7 @@ if (nav) {
                   <div>Subscribers: <strong>{adminData.stats?.newsletter ?? 0}</strong></div>
                 </div>
 
-                <h3>Contacts</h3>
+                <h2>Contacts</h2>
 
                 <div className="admin-status-tabs">
                   {["new", "contacted", "qualified", "archived"].map((status) => (
@@ -606,6 +612,8 @@ if (nav) {
                   src={nexoraLogo}
                   alt="Nexora"
                   className="nav-logo-image"
+                  width="160"
+                  height="80"
                 />
               </div>
               
@@ -642,6 +650,7 @@ if (nav) {
             )}
           </nav>
 
+      <main id="main-content">
       {/* Hero Section */}
       <section
         className="hero-section"
@@ -821,6 +830,7 @@ if (nav) {
       <section id="services" className="section-container section-dark" data-testid="services-section">
         <div className="section-content">
           <div className="section-header">
+            <h2 className="section-title">What we build</h2>
             <p className="section-subtitle">Conversion‑focused websites and web platforms built for speed, scale, and credibility</p>
           </div>
 
@@ -961,7 +971,7 @@ if (nav) {
 
         <div className="website-faq-list">
           <div className="website-faq-item">
-            <h4>How is Nexora different from typical web agencies?</h4>
+            <h3>How is Nexora different from typical web agencies?</h3>
             <p>
               We engineer websites like production systems — focusing on
               performance, scalability, security, and long‑term maintainability,
@@ -970,7 +980,7 @@ if (nav) {
           </div>
 
           <div className="website-faq-item">
-            <h4>Do you work with existing websites or only new builds?</h4>
+            <h3>Do you work with existing websites or only new builds?</h3>
             <p>
               Both. We frequently redesign, optimize, and re‑architect existing
               websites to improve speed, conversion, and reliability.
@@ -978,7 +988,7 @@ if (nav) {
           </div>
 
           <div className="website-faq-item">
-            <h4>Will my website be SEO‑friendly?</h4>
+            <h3>Will my website be SEO‑friendly?</h3>
             <p>
               Yes. Every website is built with clean architecture, fast load
               times, and SEO‑ready structure aligned with modern search best
@@ -987,9 +997,9 @@ if (nav) {
           </div>
 
           <div className="website-faq-item">
-            <h4>What happens after the website is launched?</h4>
+            <h3>What happens after the website is launched?</h3>
             <p>
-              We don’t disappear after launch. We support iteration,
+              We don't disappear after launch. We support iteration,
               performance monitoring, and future enhancements as your business
               grows.
             </p>
@@ -1000,7 +1010,7 @@ if (nav) {
       {/* Soft Mid-Page CTA */}
       <section className="section-container section-soft-cta">
         <div className="section-content soft-cta-content">
-          <h3 className="soft-cta-title">Speak with a senior engineer</h3>
+          <h2 className="soft-cta-title">Speak with a senior engineer</h2>
           <p className="soft-cta-subtitle">
             No sales pitch. Just a focused discussion on feasibility, risks, and system direction.
           </p>
@@ -1012,88 +1022,10 @@ if (nav) {
           </button>
         </div>
       </section>
-{/* System Architecture Section */}
-<section className="architecture-section" data-testid="architecture-section">
-  <div className="architecture-header">
-    <div className="architecture-eyebrow">System architecture</div>
-    <h2 className="architecture-title">
-      How Nexora builds production AI systems
-    </h2>
-    <p className="architecture-subtitle">
-      A layered, battle-tested architecture designed for reliability,
-      security, and long-term evolution.
-    </p>
-  </div>
-
-  <div className="architecture-stack">
-    <div className="architecture-layer">
-      <span className="layer-label">Experience Layer</span>
-      <span className="layer-desc">Web apps · Mobile apps · Dashboards</span>
-    </div>
-
-    <div className="architecture-layer">
-      <span className="layer-label">Application Layer</span>
-      <span className="layer-desc">APIs · Business logic · Workflow engines</span>
-    </div>
-
-    <div className="architecture-layer architecture-layer-highlight">
-      <span className="layer-label">Intelligence Layer</span>
-      <span className="layer-desc">LLMs · AI agents · Decision systems</span>
-    </div>
-
-    <div className="architecture-layer">
-      <span className="layer-label">Data Layer</span>
-      <span className="layer-desc">Databases · Vector stores · Event streams</span>
-    </div>
-
-    <div className="architecture-layer">
-      <span className="layer-label">Infrastructure Layer</span>
-      <span className="layer-desc">Cloud · Security · Observability · CI/CD</span>
-    </div>
-  </div>
-</section>
-      {/* Tech Stack */}
-      <section className="section-container" data-testid="tech-stack-section">
-        <div className="section-content">
-          <div className="section-header">
-            <h2 className="section-title">Technology foundation</h2>
-            <p className="section-subtitle">Built with industry-leading tools and frameworks</p>
-          </div>
-        <div className="tech-stack-wrapper">
-          <div className="tech-stack-grid">
-            {[
-              'React',
-              'Node.js',
-              'Python',
-              'TypeScript',
-              'MongoDB',
-              'PostgreSQL',
-              'AWS',
-              'Docker',
-              'Kubernetes',
-              'OpenAI',
-              'TensorFlow',
-              'Next.js',
-              // duplicate for infinite loop
-              'React',
-              'Node.js',
-              'Python',
-              'TypeScript',
-              'MongoDB',
-              'PostgreSQL',
-              'AWS',
-              'Docker',
-              'Kubernetes',
-              'OpenAI',
-              'TensorFlow',
-              'Next.js'
-            ].map((tech, index) => (
-              <div key={index} className="tech-item">{tech}</div>
-            ))}
-          </div>
-        </div>
-        </div>
-      </section>
+      {/* System Architecture & Tech Stack - Lazy Loaded */}
+      <Suspense fallback={<div style={{ minHeight: '400px' }} />}>
+        <ArchitectureSection />
+      </Suspense>
 
       {/* Process Section */}
       <section id="process" className="section-container section-dark" data-testid="process-section">
@@ -1235,81 +1167,15 @@ if (nav) {
   </div>
 </section>
 
-      {/* Testimonials */}
-      <section className="section-container section-dark" data-testid="testimonials-section">
-        <div className="section-content">
-          <div className="testimonials-container">
-            <div className="testimonial" data-aos="fade-up">
-              <p className="testimonial-text">
-                "Nexora brought a level of technical depth and strategic clarity that fundamentally changed how we deploy AI in healthcare. Their systems operate reliably at a scale we previously thought was unrealistic."
-              </p>
-              <div className="testimonial-author">
-                <div className="author-name">Dr. Sarah Mitchell</div>
-                <div className="author-title">CTO, IntelliHealth AI</div>
-              </div>
-            </div>
+      {/* Testimonials - Lazy Loaded */}
+      <Suspense fallback={<div style={{ minHeight: '300px' }} />}>
+        <TestimonialsSection />
+      </Suspense>
 
-            <div className="testimonial" data-aos="fade-up" data-aos-delay="100">
-              <p className="testimonial-text">
-                "Nexora engineered infrastructure we trust with our most critical financial operations. The system runs with zero downtime and a level of reliability that is exceptionally difficult to achieve."
-              </p>
-              <div className="testimonial-author">
-                <div className="author-name">James Chen</div>
-                <div className="author-title">VP Engineering, FinFlow Systems</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Engagement Clarity Section */}
-<section className="engagement-section" data-testid="engagement-section">
-  <div className="engagement-header">
-    <div className="engagement-eyebrow">How engagement starts</div>
-    <h2 className="engagement-title">
-      A conversation — not a sales call
-    </h2>
-    <p className="engagement-subtitle">
-      We start with a focused technical discussion to understand your system,
-      constraints, and goals. No pitches. No pressure.
-    </p>
-  </div>
-
-  <div className="engagement-steps">
-    <div className="engagement-step">
-      <div className="step-number">01</div>
-      <div className="step-content">
-        <h4>Initial technical conversation</h4>
-        <p>
-          A senior engineer discusses your problem space, architecture,
-          and business context — confidentially.
-        </p>
-      </div>
-    </div>
-
-    <div className="engagement-step">
-      <div className="step-number">02</div>
-      <div className="step-content">
-        <h4>Feasibility & system direction</h4>
-        <p>
-          We outline possible architectures, risks, and trade-offs —
-          even if we don’t work together.
-        </p>
-      </div>
-    </div>
-
-    <div className="engagement-step">
-      <div className="step-number">03</div>
-      <div className="step-content">
-        <h4>Clear next steps</h4>
-        <p>
-          You leave with clarity: technical direction, scope,
-          and whether Nexora is the right partner.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+      {/* Engagement Clarity Section - Lazy Loaded */}
+      <Suspense fallback={<div style={{ minHeight: '400px' }} />}>
+        <EngagementSection />
+      </Suspense>
 
       {/* CTA Section */}
       <section
@@ -1335,59 +1201,12 @@ if (nav) {
           </button>
         </div>
       </section>
+      </main>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-content">
-          <div className="footer-main">
-            <div className="footer-brand">
-              <div className="footer-logo">
-                <img
-                  src={nexoraLogo}
-                  alt="Nexora"
-                  className="footer-logo-image"
-                />
-              </div>
-              <p className="footer-tagline">Intelligence Reimagined</p>
-            </div>
-
-            <div className="footer-links">
-              <div className="footer-column">
-                <h4 className="footer-heading">Capabilities</h4>
-                <button onClick={() => scrollToSection('services')} className="footer-link">
-                  High‑performance websites
-                </button>
-                <button onClick={() => scrollToSection('services')} className="footer-link">
-                  Full‑stack web platforms
-                </button>
-                <button onClick={() => scrollToSection('services')} className="footer-link">
-                  AI‑powered automation
-                </button>
-                <button onClick={() => scrollToSection('services')} className="footer-link">
-                  Scalable infrastructure
-                </button>
-              </div>
-
-              <div className="footer-column">
-                <h4 className="footer-heading">Company</h4>
-                <button onClick={() => scrollToSection('about')} className="footer-link">About</button>
-                <button onClick={() => scrollToSection('clients')} className="footer-link">Case Studies</button>
-                <button onClick={() => scrollToSection('process')} className="footer-link">Approach</button>
-              </div>
-
-              <div className="footer-column">
-                <h4 className="footer-heading">Contact</h4>
-                <div className="footer-contact">info@nexorair.com</div>
-                <div className="footer-contact">Bengaluru, India</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="footer-bottom">
-            <p>&copy; 2022 Nexora. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      {/* Footer - Lazy Loaded */}
+      <Suspense fallback={<div style={{ minHeight: '200px' }} />}>
+        <Footer scrollToSection={scrollToSection} />
+      </Suspense>
 
           {/* Contact Modal */}
           {showContactModal && (

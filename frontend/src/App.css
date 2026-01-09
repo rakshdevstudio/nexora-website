@@ -3401,7 +3401,7 @@ body.admin-mode .app-container {
   color: rgba(120, 140, 255, 0.9);
 }
 
-.step-content h4 {
+.step-content h3 {
   margin: 0 0 0.4rem;
   font-size: 1rem;
   font-weight: 600;
