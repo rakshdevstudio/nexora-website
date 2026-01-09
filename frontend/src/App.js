@@ -25,7 +25,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   // --- Admin state ---
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminToken, setAdminToken] = useState('9c6be72247bd9b60b95142c2b2d7f645eb92311d780396e985de467cd1ab7810');
+  const [adminToken, setAdminToken] = useState('');
   const [adminData, setAdminData] = useState({
     contacts: [],
     inquiries: [],
