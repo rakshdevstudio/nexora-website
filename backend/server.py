@@ -6,7 +6,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
 import smtplib
@@ -21,7 +21,9 @@ ENV = os.environ.get("ENV", "development")
 IS_PROD = ENV == "production"
 
 # --- Admin Token for Founder/Admin Dashboard ---
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")
+# In production, set ADMIN_TOKEN via environment.
+# Fallback to a dev-friendly default so the admin UI works if unset.
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "dev-admin-token")
 
 SMTP_HOST = os.environ.get("SMTP_HOST")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
@@ -72,6 +74,7 @@ logger = logging.getLogger(__name__)
 
 # --- Admin Auth Guard ---
 def verify_admin(token: str | None):
+    """Simple token-based guard for the admin dashboard."""
     if not ADMIN_TOKEN or token != ADMIN_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -207,6 +210,8 @@ class Newsletter(BaseModel):
 class NewsletterCreate(BaseModel):
     email: EmailStr
 
+from fastapi import Query, Body, Request
+
 # --- Admin Response Models (UI-safe) ---
 class AdminContact(BaseModel):
     id: str
@@ -217,6 +222,8 @@ class AdminContact(BaseModel):
     business_type: str
     city: str
     message: str
+    # Optional private admin notes; present in dev server and UI
+    notes: Optional[str] = None
     status: str
     timestamp: datetime
 
@@ -304,17 +311,22 @@ async def get_contacts():
         raise HTTPException(status_code=500, detail="Failed to fetch contacts")
 
 
+#
 # --- Admin: List contacts with status filter ---
-from fastapi import Query
+#
 @api_router.get(
     "/admin/contacts",
     response_model=List[AdminContact],
-    tags=["admin"]
+    tags=["admin"],
 )
 async def admin_get_contacts(
     status: Optional[str] = None,
-    admin_token: Optional[str] = None
+    admin_token: Optional[str] = None,
 ):
+    """
+    Admin-only list of contacts, optionally filtered by status.
+    Used by the /admin dashboard.
+    """
     verify_admin(admin_token)
 
     collection = get_collection("contacts")
@@ -323,7 +335,7 @@ async def admin_get_contacts(
     contacts = await collection.find(query, {"_id": 0}).to_list(500)
 
     for contact in contacts:
-        if isinstance(contact["timestamp"], str):
+        if isinstance(contact.get("timestamp"), str):
             contact["timestamp"] = datetime.fromisoformat(
                 contact["timestamp"]
             ).replace(tzinfo=timezone.utc)
@@ -331,26 +343,37 @@ async def admin_get_contacts(
     return contacts
 
 
-# --- Admin: Update contact status (new → contacted → converted) ---
-@api_router.patch(
+#
+# --- Admin: Update contact status (new/contacted/qualified/converted/archived) ---
+#
+@api_router.api_route(
     "/admin/contacts/{contact_id}/status",
-    tags=["admin"]
+    methods=["PATCH", "POST"],
+    tags=["admin"],
 )
 async def update_contact_status(
     contact_id: str,
-    status: str,
-    admin_token: Optional[str] = None
+    request: Request,
+    admin_token: Optional[str] = None,
 ):
+    """
+    Update a contact's status from the admin dashboard.
+    Mirrors the dev server behaviour and accepts both PATCH and POST
+    with a JSON body: {"status": "..."}.
+    """
     verify_admin(admin_token)
 
-    if status not in {"new", "contacted", "converted"}:
+    payload = await request.json()
+    status = payload.get("status")
+
+    if status not in {"new", "contacted", "qualified", "converted", "archived"}:
         raise HTTPException(status_code=400, detail="Invalid status")
 
     collection = get_collection("contacts")
 
     result = await collection.update_one(
         {"id": contact_id},
-        {"$set": {"status": status}}
+        {"$set": {"status": status}},
     )
 
     if result.matched_count == 0:
@@ -359,7 +382,9 @@ async def update_contact_status(
     return {"ok": True, "status": status}
 
 
+#
 # --- Admin: List service inquiries ---
+#
 @api_router.get(
     "/admin/service-inquiries",
     response_model=List[AdminServiceInquiry],
@@ -469,12 +494,40 @@ async def get_stats():
         logger.error(f"Error fetching stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch stats")
 
+#
+@api_router.get("/admin/stats", tags=["admin"])
+async def admin_get_stats(admin_token: Optional[str] = None):
+    """
+    Lightweight stats for the admin dashboard header.
+    Mirrors the /api/admin/stats dev endpoint.
+    """
+    verify_admin(admin_token)
+
+    try:
+        contacts_collection = get_collection("contacts")
+        inquiries_collection = get_collection("service_inquiries")
+        newsletters_collection = get_collection("newsletters")
+
+        total_contacts = await contacts_collection.count_documents({})
+        total_inquiries = await inquiries_collection.count_documents({})
+        total_subscribers = await newsletters_collection.count_documents({})
+
+        return {
+            "contacts": total_contacts,
+            "service_inquiries": total_inquiries,
+            "newsletter": total_subscribers,
+        }
+    except Exception as e:
+        logger.error(f"Error fetching admin stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch admin stats")
+
+
 @api_router.get("/health")
 async def health_check():
     if not USE_DB:
         return {
             "status": "ok",
-            "database": "in-memory (development)",
+            "database": "not configured (development)",
             "service": "nexora-backend-dev"
         }
 
