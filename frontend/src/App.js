@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { Routes, Route, useLocation, useNavigate, Link } from 'react-router-dom';
 import '@/App.css';
 import axios from 'axios';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { Menu, X, ChevronRight, ArrowRight, Check, Send, CheckCircle } from 'lucide-react';
+import { Menu, X, ChevronRight, ArrowRight, Check, Send, CheckCircle, Lock } from 'lucide-react';
 
 import nexoraLogo from "./assets/Nexora transparent.PNG";
 
@@ -66,13 +67,18 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // --- Hero cinematic entry control ---
   const [heroReady, setHeroReady] = useState(false);
+  const location = useLocation();
+  
   // --- Detect /admin route ---
   useEffect(() => {
-    if (window.location.pathname === '/admin') {
+    if (location.pathname === '/admin') {
       setIsAdmin(true);
       document.body.classList.add('admin-mode');
+    } else {
+      setIsAdmin(false);
+      document.body.classList.remove('admin-mode');
     }
-  }, []);
+  }, [location.pathname]);
 
   // --- Hero initial cinematic delay ---
   useEffect(() => {
@@ -413,260 +419,277 @@ if (nav) {
     setMenuOpen(false);
   };
 
-  return (
-    <>
-      {isAdmin && (
-        <div className="admin-container">
-          {!adminData.stats ? (
-            <div className="admin-login">
-              <h2>Admin Access</h2>
-              <input
-                type="password"
-                placeholder="Admin token"
-                value={adminToken}
-                onChange={(e) => setAdminToken(e.target.value)}
-              />
-              <button className="btn-primary" onClick={loadAdminData}>
-                Enter
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* LEFT COLUMN */}
-              <div className="admin-dashboard">
-                <h1>Nexora Admin</h1>
-
-                <div className="admin-stats">
-                  <div>Total Contacts: <strong>{adminData.stats?.contacts ?? 0}</strong></div>
-                  <div>Service Inquiries: <strong>{adminData.stats?.service_inquiries ?? 0}</strong></div>
-                  <div>Subscribers: <strong>{adminData.stats?.newsletter ?? 0}</strong></div>
-                </div>
-
-                <h2>Contacts</h2>
-
-                <div className="admin-status-tabs">
-                  {["new", "contacted", "qualified", "archived"].map((status) => (
-                    <div
-                      key={status}
-                      className={`admin-status-tab ${contactFilter === status ? "active" : ""}`}
-                      onClick={() => setContactFilter(status)}
-                    >
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="admin-search">
-                  <input
-                    type="search"
-                    placeholder="Search by name or email…"
-                    value={contactSearch}
-                    onChange={(e) => setContactSearch(e.target.value)}
-                  />
-                </div>
-
-                {adminData.contacts.length === 0 && (
-                  <div className="admin-empty">
-                    No contacts yet. New submissions will appear here.
-                  </div>
-                )}
-
-                <div className="admin-table">
-                  {filteredContacts.map((c) => (
-                    <div
-                      key={c.id}
-                      className={`admin-row ${selectedContact?.id === c.id ? 'active' : ''}`}
-                      onClick={() =>
-                        setSelectedContact((prev) =>
-                          prev && prev.id === c.id ? null : c
-                        )
-                      }
-                    >
-                      <div className="admin-row-main">
-                        <strong>{c.name}</strong>
-                        <span className="admin-contact-email">{c.email}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* RIGHT COLUMN */}
-              <div
-                className={`admin-detail-panel ${
-                  selectedContact ? '' : 'is-collapsed'
-                }`}
-              >
-                {selectedContact && (
-                  <>
-                    <div className="admin-detail-header">
-                      <div>
-                        <h2>{selectedContact.name}</h2>
-                        <p className="admin-detail-email">{selectedContact.email}</p>
-                      </div>
-
-                      <div className="admin-status-control">
-                        <label>Status</label>
-                        <select
-                          value={selectedContact.status || "new"}
-                          disabled={updatingStatus}
-                          onChange={(e) =>
-                            updateContactStatus(selectedContact.id, e.target.value)
-                          }
-                        >
-                          <option value="new">New</option>
-                          <option value="contacted">Contacted</option>
-                          <option value="qualified">Qualified</option>
-                          <option value="archived">Archived</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="admin-detail-grid">
-                      <div>
-                        <label>Industry</label>
-                        <div>{selectedContact.industry || "—"}</div>
-                      </div>
-
-                      <div>
-                        <label>Business Type</label>
-                        <div>{selectedContact.business_type || "—"}</div>
-                      </div>
-
-                      <div>
-                        <label>City</label>
-                        <div>{selectedContact.city || "—"}</div>
-                      </div>
-
-                      <div>
-                        <label>Phone</label>
-                        <div>{selectedContact.phone && selectedContact.phone !== "undefined"
-                          ? selectedContact.phone
-                          : "—"}</div>
-                      </div>
-                    </div>
-
-                    <div className="admin-detail-message">
-                      <label>Message</label>
-                      <p>{selectedContact.message || "No message provided."}</p>
-                    </div>
-                    <div className="admin-internal-notes">
-                      <label>Internal Notes</label>
-
-                      <textarea
-                        placeholder="Add private notes for internal tracking…"
-                        value={internalNotes}
-                        onChange={(e) => {
-                          setInternalNotes(e.target.value);
-                          setNotesSaved(false);
-                        }}
-                      />
-                      {notesSaved && (
-                        <div className="notes-confirmation">
-                          Notes saved successfully.
-                        </div>
-                      )}
-
-                      <div className="notes-actions">
-                        {notesSaved && lastSavedAt && (
-                          <span className="notes-saved-indicator">
-                            Saved ✓ <em>{lastSavedAt.toLocaleTimeString()}</em>
-                          </span>
-                        )}
-                        <button
-                          className={`notes-save-btn ${notesSaved ? 'saved' : ''}`}
-                          onClick={async () => {
-                            if (!selectedContact?.id) return;
-                            try {
-                              setSavingNotes(true);
-
-                              await axios.post(
-                                `${API}/admin/contacts/${selectedContact.id}/notes`,
-                                { notes: internalNotes },
-                                { params: { admin_token: adminToken } }
-                              );
-                              setSelectedContact((prev) =>
-                                prev ? { ...prev, notes: internalNotes } : prev
-                              );
-                              setAdminData((prev) => ({
-                                ...prev,
-                                contacts: prev.contacts.map((c) =>
-                                  c.id === selectedContact.id ? { ...c, notes: internalNotes } : c
-                                )
-                              }));
-                              setNotesSaved(true);
-                              setLastSavedAt(new Date());
-                              setTimeout(() => {
-                                setNotesSaved(false);
-                              }, 2000);
-                            } catch (e) {
-                              alert("Failed to save notes");
-                            } finally {
-                              setSavingNotes(false);
-                            }
-                          }}
-                          disabled={savingNotes}
-                        >
-                          {savingNotes ? "Saving…" : notesSaved ? "Saved" : "Save Notes"}
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </>
-          )}
+  // Admin Page Component
+  const AdminPage = () => (
+    <div className="admin-container">
+      {!adminData.stats ? (
+        <div className="admin-login">
+          <h2>Admin Access</h2>
+          <input
+            type="password"
+            placeholder="Admin token"
+            value={adminToken}
+            onChange={(e) => setAdminToken(e.target.value)}
+          />
+          <button className="btn-primary" onClick={loadAdminData}>
+            Enter
+          </button>
         </div>
-      )}
-      {!isAdmin && (
-        <div className="app-container">
-          <div className="custom-cursor"></div>
-          <div className="custom-cursor-ring"></div>
-          {/* Navigation */}
-          <nav className="nav-bar" data-nav>
-            <div className="nav-content">
-              <div className="nav-logo">
-                <img
-                  src={nexoraLogo}
-                  alt="Nexora"
-                  className="nav-logo-image"
-                  width="160"
-                  height="80"
-                />
-              </div>
-              
-              {/* Desktop Menu */}
-              <div className="nav-menu-desktop">
-                <button onClick={() => scrollToSection('about')} className="nav-link">Why Nexora</button>
-                <button onClick={() => scrollToSection('services')} className="nav-link">What We Build</button>
-                <button onClick={() => scrollToSection('process')} className="nav-link">How We Work</button>
-                <button onClick={() => scrollToSection('clients')} className="nav-link">Proof</button>
-                <button 
-                  onClick={() => setShowContactModal(true)}
-                  className="nav-cta"
-                  data-testid="nav-contact-button"
-                >
-                  Free Consultation
-                </button>
-              </div>
+      ) : (
+        <>
+          {/* LEFT COLUMN */}
+          <div className="admin-dashboard">
+            <h1>Nexora Admin</h1>
 
-              {/* Mobile Menu Button */}
-              <button onClick={() => setMenuOpen(!menuOpen)} className="nav-mobile-toggle" data-testid="mobile-menu-button">
-                {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
+            <div className="admin-stats">
+              <div>Total Contacts: <strong>{adminData.stats?.contacts ?? 0}</strong></div>
+              <div>Service Inquiries: <strong>{adminData.stats?.service_inquiries ?? 0}</strong></div>
+              <div>Subscribers: <strong>{adminData.stats?.newsletter ?? 0}</strong></div>
             </div>
 
-            {/* Mobile Menu */}
-            {menuOpen && (
-              <div className="nav-menu-mobile" data-testid="mobile-menu">
-                <button onClick={() => scrollToSection('about')} className="nav-mobile-link">Why Nexora</button>
-                <button onClick={() => scrollToSection('services')} className="nav-mobile-link">What We Build</button>
-                <button onClick={() => scrollToSection('process')} className="nav-mobile-link">How We Work</button>
-                <button onClick={() => scrollToSection('clients')} className="nav-mobile-link">Proof</button>
-                <button onClick={() => setShowContactModal(true)} className="nav-mobile-cta">Free Consultation</button>
+            <h2>Contacts</h2>
+
+            <div className="admin-status-tabs">
+              {["new", "contacted", "qualified", "archived"].map((status) => (
+                <div
+                  key={status}
+                  className={`admin-status-tab ${contactFilter === status ? "active" : ""}`}
+                  onClick={() => setContactFilter(status)}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </div>
+              ))}
+            </div>
+
+            <div className="admin-search">
+              <input
+                type="search"
+                placeholder="Search by name or email…"
+                value={contactSearch}
+                onChange={(e) => setContactSearch(e.target.value)}
+              />
+            </div>
+
+            {adminData.contacts.length === 0 && (
+              <div className="admin-empty">
+                No contacts yet. New submissions will appear here.
               </div>
             )}
-          </nav>
+
+            <div className="admin-table">
+              {filteredContacts.map((c) => (
+                <div
+                  key={c.id}
+                  className={`admin-row ${selectedContact?.id === c.id ? 'active' : ''}`}
+                  onClick={() =>
+                    setSelectedContact((prev) =>
+                      prev && prev.id === c.id ? null : c
+                    )
+                  }
+                >
+                  <div className="admin-row-main">
+                    <strong>{c.name}</strong>
+                    <span className="admin-contact-email">{c.email}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div
+            className={`admin-detail-panel ${
+              selectedContact ? '' : 'is-collapsed'
+            }`}
+          >
+            {selectedContact && (
+              <>
+                <div className="admin-detail-header">
+                  <div>
+                    <h2>{selectedContact.name}</h2>
+                    <p className="admin-detail-email">{selectedContact.email}</p>
+                  </div>
+
+                  <div className="admin-status-control">
+                    <label>Status</label>
+                    <select
+                      value={selectedContact.status || "new"}
+                      disabled={updatingStatus}
+                      onChange={(e) =>
+                        updateContactStatus(selectedContact.id, e.target.value)
+                      }
+                    >
+                      <option value="new">New</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="qualified">Qualified</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="admin-detail-grid">
+                  <div>
+                    <label>Industry</label>
+                    <div>{selectedContact.industry || "—"}</div>
+                  </div>
+
+                  <div>
+                    <label>Business Type</label>
+                    <div>{selectedContact.business_type || "—"}</div>
+                  </div>
+
+                  <div>
+                    <label>City</label>
+                    <div>{selectedContact.city || "—"}</div>
+                  </div>
+
+                  <div>
+                    <label>Phone</label>
+                    <div>{selectedContact.phone && selectedContact.phone !== "undefined"
+                      ? selectedContact.phone
+                      : "—"}</div>
+                  </div>
+                </div>
+
+                <div className="admin-detail-message">
+                  <label>Message</label>
+                  <p>{selectedContact.message || "No message provided."}</p>
+                </div>
+                <div className="admin-internal-notes">
+                  <label>Internal Notes</label>
+
+                  <textarea
+                    placeholder="Add private notes for internal tracking…"
+                    value={internalNotes}
+                    onChange={(e) => {
+                      setInternalNotes(e.target.value);
+                      setNotesSaved(false);
+                    }}
+                  />
+                  {notesSaved && (
+                    <div className="notes-confirmation">
+                      Notes saved successfully.
+                    </div>
+                  )}
+
+                  <div className="notes-actions">
+                    {notesSaved && lastSavedAt && (
+                      <span className="notes-saved-indicator">
+                        Saved ✓ <em>{lastSavedAt.toLocaleTimeString()}</em>
+                      </span>
+                    )}
+                    <button
+                      className={`notes-save-btn ${notesSaved ? 'saved' : ''}`}
+                      onClick={async () => {
+                        if (!selectedContact?.id) return;
+                        try {
+                          setSavingNotes(true);
+
+                          await axios.post(
+                            `${API}/admin/contacts/${selectedContact.id}/notes`,
+                            { notes: internalNotes },
+                            { params: { admin_token: adminToken } }
+                          );
+                          setSelectedContact((prev) =>
+                            prev ? { ...prev, notes: internalNotes } : prev
+                          );
+                          setAdminData((prev) => ({
+                            ...prev,
+                            contacts: prev.contacts.map((c) =>
+                              c.id === selectedContact.id ? { ...c, notes: internalNotes } : c
+                            )
+                          }));
+                          setNotesSaved(true);
+                          setLastSavedAt(new Date());
+                          setTimeout(() => {
+                            setNotesSaved(false);
+                          }, 2000);
+                        } catch (e) {
+                          alert("Failed to save notes");
+                        } finally {
+                          setSavingNotes(false);
+                        }
+                      }}
+                      disabled={savingNotes}
+                    >
+                      {savingNotes ? "Saving…" : notesSaved ? "Saved" : "Save Notes"}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  // Main Page Component
+  const MainPage = () => (
+    <div className="app-container">
+      <div className="custom-cursor"></div>
+      <div className="custom-cursor-ring"></div>
+      {/* Navigation */}
+      <nav className="nav-bar" data-nav>
+        <div className="nav-content">
+          <div className="nav-logo">
+            <img
+              src={nexoraLogo}
+              alt="Nexora"
+              className="nav-logo-image"
+              width="160"
+              height="80"
+            />
+          </div>
+          
+          {/* Desktop Menu */}
+          <div className="nav-menu-desktop">
+            <button onClick={() => scrollToSection('about')} className="nav-link">Why Nexora</button>
+            <button onClick={() => scrollToSection('services')} className="nav-link">What We Build</button>
+            <button onClick={() => scrollToSection('process')} className="nav-link">How We Work</button>
+            <button onClick={() => scrollToSection('clients')} className="nav-link">Proof</button>
+            <Link 
+              to="/admin"
+              className="nav-admin-link"
+              title="Admin Login"
+            >
+              <Lock className="nav-admin-icon" size={16} />
+              <span className="nav-admin-text">Admin</span>
+            </Link>
+            <button 
+              onClick={() => setShowContactModal(true)}
+              className="nav-cta"
+              data-testid="nav-contact-button"
+            >
+              Free Consultation
+            </button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button onClick={() => setMenuOpen(!menuOpen)} className="nav-mobile-toggle" data-testid="mobile-menu-button">
+            {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        {menuOpen && (
+          <div className="nav-menu-mobile" data-testid="mobile-menu">
+            <button onClick={() => scrollToSection('about')} className="nav-mobile-link">Why Nexora</button>
+            <button onClick={() => scrollToSection('services')} className="nav-mobile-link">What We Build</button>
+            <button onClick={() => scrollToSection('process')} className="nav-mobile-link">How We Work</button>
+            <button onClick={() => scrollToSection('clients')} className="nav-mobile-link">Proof</button>
+            <Link 
+              to="/admin"
+              className="nav-mobile-admin-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              <Lock className="nav-mobile-admin-icon" size={18} />
+              <span>Admin Login</span>
+            </Link>
+            <button onClick={() => setShowContactModal(true)} className="nav-mobile-cta">Free Consultation</button>
+          </div>
+        )}
+      </nav>
 
       <main id="main-content">
       {/* Hero Section */}
@@ -1400,8 +1423,14 @@ if (nav) {
             </div>
           )}
         </div>
-      )}
-    </>
+    
+  );
+
+  return (
+    <Routes>
+      <Route path="/admin" element={<AdminPage />} />
+      <Route path="*" element={<MainPage />} />
+    </Routes>
   );
 }
 
