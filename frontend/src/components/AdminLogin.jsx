@@ -22,7 +22,9 @@ const AdminLogin = ({ apiBaseUrl }) => {
         e.preventDefault();
         setError('');
 
-        if (!token.trim()) {
+        const cleanToken = token.trim();
+
+        if (!cleanToken) {
             setError('Token is required');
             return;
         }
@@ -34,12 +36,12 @@ const AdminLogin = ({ apiBaseUrl }) => {
             // Explicitly set the Authorization header
             await axios.get(`${apiBaseUrl}/admin/verify`, {
                 headers: {
-                    Authorization: `Bearer ${token}`
+                    Authorization: `Bearer ${cleanToken}`
                 }
             });
 
             // If successful, store token in sessionStorage and redirect
-            sessionStorage.setItem('admin_token', token);
+            sessionStorage.setItem('admin_token', cleanToken);
             navigate('/admin/dashboard');
         } catch (err) {
             console.error("Login failed:", err);
