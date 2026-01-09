@@ -546,13 +546,13 @@ async def get_stats():
 
 #
 @api_router.get("/admin/verify", tags=["admin"])
-async def verify_admin_token(
+async def admin_verify(
     admin_token: Optional[str] = None,
     authorization: Optional[str] = Header(None),
 ):
     """
-    Simple verification endpoint.
-    Returns 200 OK if token is valid, otherwise 401.
+    Verifies admin token for frontend login.
+    Returns 200 if token is valid, 401 otherwise.
     """
     verify_admin(admin_token, authorization)
     return {"ok": True}
