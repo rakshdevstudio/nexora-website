@@ -105,11 +105,6 @@ def verify_admin(query_token: str | None, auth_header: str | None = None):
         # If ADMIN_TOKEN exists, enforce it strictly
         if admin_env_token:
             if token != admin_env_token:
-                logger.warning(
-                    f"⚠️ Auth Failed: Token mismatch. "
-                    f"Received len={len(token)}, Expected len={len(admin_env_token)}. "
-                    f"First 3 chars: '{token[:3]}' vs '{admin_env_token[:3]}'"
-                )
                 raise HTTPException(status_code=401, detail="Unauthorized")
             return
 
@@ -117,7 +112,6 @@ def verify_admin(query_token: str | None, auth_header: str | None = None):
         if token == "dev-admin-token":
             return
 
-        logger.warning("⚠️ Auth Failed: Production mode but valid ADMIN_TOKEN not configured or provided.")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # --- DEVELOPMENT ---
