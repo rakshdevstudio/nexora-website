@@ -545,6 +545,20 @@ async def get_stats():
         raise HTTPException(status_code=500, detail="Failed to fetch stats")
 
 #
+@api_router.get("/admin/verify", tags=["admin"])
+async def verify_admin_token(
+    admin_token: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Simple verification endpoint.
+    Returns 200 OK if token is valid, otherwise 401.
+    """
+    verify_admin(admin_token, authorization)
+    return {"ok": True}
+
+
+#
 @api_router.get("/admin/stats", tags=["admin"])
 async def admin_get_stats(
     admin_token: Optional[str] = None,

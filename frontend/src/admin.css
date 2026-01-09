@@ -5,63 +5,180 @@
     align-items: center;
     justify-content: center;
     background-color: #050505;
+    background-image:
+        radial-gradient(circle at 50% 0%, rgba(50, 80, 160, 0.08) 0%, transparent 50%);
     padding: 20px;
 }
 
 .admin-login-card {
     width: 100%;
-    max-width: 400px;
-    padding: 40px;
+    max-width: 420px;
+    padding: 48px;
     background: #0a0a0a;
-    border: 1px solid #1f1f1f;
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    box-shadow:
+        0 20px 40px -10px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.03);
+    opacity: 0;
+    animation: cardFadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Branding */
+.admin-brand {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.admin-logo-text {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 24px;
+    letter-spacing: 0.15em;
+    color: #ffffff;
+    margin-bottom: 6px;
+}
+
+.admin-tagline {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
 }
 
 .admin-login-card h2 {
-    margin-bottom: 24px;
-    color: #ffffff;
-    font-size: 24px;
+    margin-bottom: 28px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 15px;
     text-align: center;
-    font-weight: 600;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    font-family: 'Courier New', monospace;
+    /* Tech feel */
+    opacity: 0.7;
 }
 
 .admin-login-card .form-group {
     margin-bottom: 24px;
 }
 
+/* Inputs */
+.admin-label {
+    display: block;
+    font-size: 13px;
+    color: #a1a1a1;
+    /* WCAG AA Contrast against #0a0a0a */
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
 .admin-login-card input {
     width: 100%;
     padding: 14px 16px;
-    background: #141414;
+    background: #111111;
     border: 1px solid #2a2a2a;
     border-radius: 8px;
     color: #ffffff;
-    font-size: 16px;
-    transition: border-color 0.2s;
+    font-size: 15px;
+    transition: all 0.2s ease;
 }
 
 .admin-login-card input:focus {
     outline: none;
-    border-color: #3b82f6;
-    background: #1a1a1a;
+    border-color: #4a80ff;
+    background: #161616;
+    box-shadow: 0 0 0 4px rgba(74, 128, 255, 0.1);
 }
 
+.admin-login-card input::placeholder {
+    color: #444;
+}
+
+/* Helper Text */
+.input-helper-text {
+    font-size: 12px;
+    color: #666;
+    /* Subtle but readable */
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Error State */
 .admin-login-card .input-error {
-    border-color: #ef4444;
+    border-color: #993333;
 }
 
 .admin-login-card .error-message {
-    color: #ef4444;
-    font-size: 14px;
-    margin-bottom: 16px;
+    color: #ff8080;
+    font-size: 13px;
+    margin-bottom: 20px;
     text-align: center;
-    background: rgba(239, 68, 68, 0.1);
-    padding: 10px;
-    border-radius: 6px;
+    background: rgba(255, 50, 50, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.15);
+    padding: 12px;
+    border-radius: 8px;
 }
 
+.shake-animation {
+    animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+
+    10%,
+    90% {
+        transform: translate3d(-1px, 0, 0);
+    }
+
+    20%,
+    80% {
+        transform: translate3d(2px, 0, 0);
+    }
+
+    30%,
+    50%,
+    70% {
+        transform: translate3d(-4px, 0, 0);
+    }
+
+    40%,
+    60% {
+        transform: translate3d(4px, 0, 0);
+    }
+}
+
+/* Button */
 .admin-login-card .btn-primary {
     width: 100%;
     justify-content: center;
+    padding: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: #ffffff;
+    color: #000;
+    border-radius: 8px;
+    border: none;
+}
+
+.admin-login-card .btn-primary:hover:not(:disabled) {
+    background: #e0e0e0;
+    transform: translateY(-1px);
+}
+
+.admin-login-card .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
