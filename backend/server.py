@@ -74,72 +74,43 @@ logger = logging.getLogger(__name__)
 
 # --- Admin Auth Guard ---
 def verify_admin(query_token: str | None, auth_header: str | None = None):
-    """
-    Admin guard that:
-    - Reads token from Authorization header (preferred) or query string (?admin_token=).
-    - In production: only accepts ADMIN_TOKEN from env.
-    - In non-production: also accepts the dev token "dev-admin-token".
-    Priority:
-      1. Authorization header
-      2. Query param (backwards compatible with existing frontend)
-    Logs high-level reasons for 401s without exposing token values.
-    """
     token = None
-    source = None
-
-    # 1) Prefer Authorization header if present
+    
+    # 1. Extract token from Authorization header
     if auth_header:
-        # Support both "Bearer <token>" and raw token.
         parts = auth_header.split()
-        token = parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" else auth_header
-        source = "authorization_header"
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            token = parts[1]
+        else:
+            token = auth_header
 
-    # 2) Fallback to query param (current frontend behaviour)
+    # 2. Fallback to query param
     if not token and query_token:
         token = query_token
-        source = "query_param"
 
     if not token:
-        logger.warning(
-            "Admin auth failed: missing token (no Authorization header or admin_token query param)"
-        )
         raise HTTPException(status_code=401, detail="Unauthorized")
-
-    # Temporary diagnostic logging without exposing token value
-    logger.info(f"Admin auth token received (source={source})")
 
     env = os.environ.get("NODE_ENV") or ENV or "development"
     admin_env_token = ADMIN_TOKEN
 
     if env == "production":
-        # Production:
-        # If ADMIN_TOKEN is set, enforce it.
-        # If ADMIN_TOKEN is missing (misconfigured), temporarily allow dev token.
         if admin_env_token:
             if token != admin_env_token:
-                logger.warning("Admin auth failed: invalid token (production)")
                 raise HTTPException(status_code=401, detail="Unauthorized")
-            logger.info("Admin auth success: matched ADMIN_TOKEN (production)")
             return
 
-        # Fallback when ADMIN_TOKEN is not configured
         if token == "dev-admin-token":
-            logger.warning("⚠️ ADMIN_TOKEN missing in production — allowing dev token temporarily")
             return
 
-        logger.error("Admin auth failed: ADMIN_TOKEN not configured and token invalid")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # Non-production: allow either ADMIN_TOKEN (if set) or "dev-admin-token".
     if token == "dev-admin-token":
-        logger.info("Admin auth success: matched dev token (non-production)")
         return
 
     if admin_env_token and token == admin_env_token:
-        logger.info("Admin auth success: matched ADMIN_TOKEN (non-production)")
         return
 
-    logger.warning("Admin auth failed: invalid or expired token (non-production)")
     raise HTTPException(status_code=401, detail="Unauthorized")
 
 def send_lead_email(subject: str, body: str):
