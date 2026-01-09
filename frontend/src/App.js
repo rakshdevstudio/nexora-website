@@ -20,6 +20,10 @@ const BACKEND_URL =
     ? "http://127.0.0.1:8000"
     : process.env.REACT_APP_BACKEND_URL;
 
+// Lazy load admin components
+const AdminLogin = lazy(() => import('./components/AdminLogin'));
+const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
+
 const API = `${BACKEND_URL}/api`;
 
 function App() {
@@ -1135,10 +1139,24 @@ function App() {
   return (
     <Routes>
       <Route path="/admin" element={
-        <Suspense fallback={<div style={{ height: '100vh' }}></div>}>
-          <AdminDashboard apiBaseUrl={API} />
+        <Suspense fallback={<div style={{ height: '100vh', background: '#0a0a0a' }}></div>}>
+          <AdminLogin apiBaseUrl={API} />
         </Suspense>
       } />
+
+      {/* Protected Admin Routes */}
+      <Route element={
+        <Suspense fallback={<div style={{ height: '100vh', background: '#0a0a0a' }}></div>}>
+          <ProtectedRoute />
+        </Suspense>
+      }>
+        <Route path="/admin/dashboard" element={
+          <Suspense fallback={<div style={{ height: '100vh', background: '#0a0a0a' }}></div>}>
+            <AdminDashboard apiBaseUrl={API} />
+          </Suspense>
+        } />
+      </Route>
+
       <Route path="*" element={<MainPage />} />
     </Routes>
   );
