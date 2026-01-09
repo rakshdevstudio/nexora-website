@@ -13,6 +13,8 @@ const Footer = ({ scrollToSection }) => {
                 className="footer-logo-image"
                 width="56"
                 height="28"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             <p className="footer-tagline">Intelligence Reimagined</p>

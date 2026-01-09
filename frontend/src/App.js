@@ -485,6 +485,7 @@ function App() {
               <input
                 type="search"
                 placeholder="Search by name or email…"
+                aria-label="Search contacts"
                 value={contactSearch}
                 onChange={(e) => setContactSearch(e.target.value)}
               />
@@ -530,8 +531,9 @@ function App() {
                   </div>
 
                   <div className="admin-status-control">
-                    <label>Status</label>
+                    <label htmlFor="status-select">Status</label>
                     <select
+                      id="status-select"
                       value={selectedContact.status || "new"}
                       disabled={updatingStatus}
                       onChange={(e) =>
@@ -649,15 +651,17 @@ function App() {
       <div className="custom-cursor"></div>
       <div className="custom-cursor-ring"></div>
       {/* Navigation */}
-      <nav className="nav-bar" data-nav>
+      <header className="nav-bar" data-nav>
         <div className="nav-content">
           <div className="nav-logo">
             <img
               src={nexoraLogo}
-              alt="Nexora"
+              alt="Nexora - Intelligence Reimagined"
               className="nav-logo-image"
               width="160"
               height="80"
+              loading="eager"
+              decoding="async"
             />
           </div>
 
@@ -708,7 +712,7 @@ function App() {
             <button onClick={() => setShowContactModal(true)} className="nav-mobile-cta">Free Consultation</button>
           </div>
         )}
-      </nav>
+      </header>
 
       <main id="main-content">
         {/* Hero Section */}
@@ -1289,14 +1293,16 @@ function App() {
               <form onSubmit={handleSubmit} className="modal-form">
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Industry</label>
+                    <label htmlFor="industry" className="form-label">Industry</label>
                     <select
+                      id="industry"
                       name="industry"
                       value={formData.industry}
                       onChange={handleInputChange}
                       required
                       className="form-select"
                       data-testid="industry-select"
+                      autoComplete="organization-title"
                     >
                       <option value="">Select</option>
                       <option value="Technology">Technology</option>
@@ -1310,8 +1316,9 @@ function App() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Business Type</label>
+                    <label htmlFor="business_type" className="form-label">Business Type</label>
                     <select
+                      id="business_type"
                       name="business_type"
                       value={formData.business_type}
                       onChange={handleInputChange}
@@ -1329,8 +1336,9 @@ function App() {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Name</label>
+                    <label htmlFor="name" className="form-label">Name</label>
                     <input
+                      id="name"
                       type="text"
                       name="name"
                       value={formData.name}
@@ -1339,12 +1347,14 @@ function App() {
                       className="form-input"
                       placeholder="Your name"
                       data-testid="name-input"
+                      autoComplete="name"
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">City</label>
+                    <label htmlFor="city" className="form-label">City</label>
                     <input
+                      id="city"
                       type="text"
                       name="city"
                       value={formData.city}
@@ -1353,21 +1363,24 @@ function App() {
                       className="form-input"
                       placeholder="Your city"
                       data-testid="city-input"
+                      autoComplete="address-level2"
                     />
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Phone</label>
+                    <label htmlFor="phone" className="form-label">Phone</label>
 
                     <div className="phone-input-group">
                       <select
+                        aria-label="Country Code"
                         name="country_code"
                         value={formData.country_code}
                         onChange={handleInputChange}
                         className="country-code-select"
                         required
+                        autoComplete="tel-country-code"
                       >
                         <option value="+1">🇺🇸 +1 (USA)</option>
                         <option value="+44">🇬🇧 +44 (UK)</option>
@@ -1381,6 +1394,7 @@ function App() {
                       </select>
 
                       <input
+                        id="phone"
                         type="tel"
                         name="phone"
                         value={formData.phone}
@@ -1388,13 +1402,15 @@ function App() {
                         required
                         className="form-input phone-number-input"
                         placeholder="Phone number"
+                        autoComplete="tel-national"
                       />
                     </div>
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Email</label>
+                    <label htmlFor="email" className="form-label">Email</label>
                     <input
+                      id="email"
                       type="email"
                       name="email"
                       value={formData.email}
@@ -1403,13 +1419,15 @@ function App() {
                       className="form-input"
                       placeholder="your@email.com"
                       data-testid="email-input"
+                      autoComplete="email"
                     />
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Message</label>
+                  <label htmlFor="message" className="form-label">Message</label>
                   <textarea
+                    id="message"
                     name="message"
                     value={formData.message}
                     onChange={handleInputChange}
