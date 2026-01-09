@@ -85,20 +85,28 @@ def verify_admin(query_token: str | None, auth_header: str | None = None):
     Logs high-level reasons for 401s without exposing token values.
     """
     token = None
+    source = None
 
     # 1) Prefer Authorization header if present
     if auth_header:
         # Support both "Bearer <token>" and raw token.
         parts = auth_header.split()
         token = parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" else auth_header
+        source = "authorization_header"
 
     # 2) Fallback to query param (current frontend behaviour)
     if not token and query_token:
         token = query_token
+        source = "query_param"
 
     if not token:
-        logger.warning("Admin auth failed: missing token (no Authorization header or admin_token query param)")
+        logger.warning(
+            "Admin auth failed: missing token (no Authorization header or admin_token query param)"
+        )
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # Temporary diagnostic logging without exposing token value
+    logger.info(f"Admin auth token received (source={source})")
 
     env = os.environ.get("NODE_ENV") or ENV or "development"
     admin_env_token = ADMIN_TOKEN
@@ -111,13 +119,17 @@ def verify_admin(query_token: str | None, auth_header: str | None = None):
         if token != admin_env_token:
             logger.warning("Admin auth failed: invalid or expired token (production)")
             raise HTTPException(status_code=401, detail="Unauthorized")
+
+        logger.info("Admin auth success: matched ADMIN_TOKEN (production)")
         return
 
     # Non-production: allow either ADMIN_TOKEN (if set) or "dev-admin-token".
     if token == "dev-admin-token":
+        logger.info("Admin auth success: matched dev token (non-production)")
         return
 
     if admin_env_token and token == admin_env_token:
+        logger.info("Admin auth success: matched ADMIN_TOKEN (non-production)")
         return
 
     logger.warning("Admin auth failed: invalid or expired token (non-production)")

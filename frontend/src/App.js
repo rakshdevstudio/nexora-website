@@ -438,6 +438,7 @@ if (nav) {
               id="admin-token-input"
               type="password"
               placeholder="Admin token"
+              autoComplete="new-password"
               value={adminToken}
               onChange={(e) => setAdminToken(e.target.value)}
             />
