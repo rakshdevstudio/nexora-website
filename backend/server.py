@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Header
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -21,9 +21,9 @@ ENV = os.environ.get("ENV", "development")
 IS_PROD = ENV == "production"
 
 # --- Admin Token for Founder/Admin Dashboard ---
-# In production, set ADMIN_TOKEN via environment.
-# Fallback to a dev-friendly default so the admin UI works if unset.
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "dev-admin-token")
+# In production, ADMIN_TOKEN must be provided via environment.
+# In development, we also allow the hard-coded "dev-admin-token".
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")
 
 SMTP_HOST = os.environ.get("SMTP_HOST")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
@@ -73,10 +73,55 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # --- Admin Auth Guard ---
-def verify_admin(token: str | None):
-    """Simple token-based guard for the admin dashboard."""
-    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+def verify_admin(query_token: str | None, auth_header: str | None = None):
+    """
+    Admin guard that:
+    - Reads token from Authorization header (preferred) or query string (?admin_token=).
+    - In production: only accepts ADMIN_TOKEN from env.
+    - In non-production: also accepts the dev token "dev-admin-token".
+    Priority:
+      1. Authorization header
+      2. Query param (backwards compatible with existing frontend)
+    Logs high-level reasons for 401s without exposing token values.
+    """
+    token = None
+
+    # 1) Prefer Authorization header if present
+    if auth_header:
+        # Support both "Bearer <token>" and raw token.
+        parts = auth_header.split()
+        token = parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" else auth_header
+
+    # 2) Fallback to query param (current frontend behaviour)
+    if not token and query_token:
+        token = query_token
+
+    if not token:
+        logger.warning("Admin auth failed: missing token (no Authorization header or admin_token query param)")
         raise HTTPException(status_code=401, detail="Unauthorized")
+
+    env = os.environ.get("NODE_ENV") or ENV or "development"
+    admin_env_token = ADMIN_TOKEN
+
+    if env == "production":
+        # Production: only the configured ADMIN_TOKEN is valid.
+        if not admin_env_token:
+            logger.error("Admin auth failed: ADMIN_TOKEN not configured in production")
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        if token != admin_env_token:
+            logger.warning("Admin auth failed: invalid or expired token (production)")
+            raise HTTPException(status_code=401, detail="Unauthorized")
+        return
+
+    # Non-production: allow either ADMIN_TOKEN (if set) or "dev-admin-token".
+    if token == "dev-admin-token":
+        return
+
+    if admin_env_token and token == admin_env_token:
+        return
+
+    logger.warning("Admin auth failed: invalid or expired token (non-production)")
+    raise HTTPException(status_code=401, detail="Unauthorized")
 
 def send_lead_email(subject: str, body: str):
     if not EMAIL_ENABLED:
@@ -322,12 +367,13 @@ async def get_contacts():
 async def admin_get_contacts(
     status: Optional[str] = None,
     admin_token: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
 ):
     """
     Admin-only list of contacts, optionally filtered by status.
     Used by the /admin dashboard.
     """
-    verify_admin(admin_token)
+    verify_admin(admin_token, authorization)
 
     collection = get_collection("contacts")
 
@@ -355,13 +401,14 @@ async def update_contact_status(
     contact_id: str,
     request: Request,
     admin_token: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
 ):
     """
     Update a contact's status from the admin dashboard.
     Mirrors the dev server behaviour and accepts both PATCH and POST
     with a JSON body: {"status": "..."}.
     """
-    verify_admin(admin_token)
+    verify_admin(admin_token, authorization)
 
     payload = await request.json()
     status = payload.get("status")
@@ -390,8 +437,11 @@ async def update_contact_status(
     response_model=List[AdminServiceInquiry],
     tags=["admin"]
 )
-async def admin_get_service_inquiries(admin_token: Optional[str] = None):
-    verify_admin(admin_token)
+async def admin_get_service_inquiries(
+    admin_token: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
+):
+    verify_admin(admin_token, authorization)
 
     collection = get_collection("service_inquiries")
 
@@ -496,12 +546,15 @@ async def get_stats():
 
 #
 @api_router.get("/admin/stats", tags=["admin"])
-async def admin_get_stats(admin_token: Optional[str] = None):
+async def admin_get_stats(
+    admin_token: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
+):
     """
     Lightweight stats for the admin dashboard header.
     Mirrors the /api/admin/stats dev endpoint.
     """
-    verify_admin(admin_token)
+    verify_admin(admin_token, authorization)
 
     try:
         contacts_collection = get_collection("contacts")

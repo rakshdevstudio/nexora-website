@@ -419,21 +419,32 @@ if (nav) {
     setMenuOpen(false);
   };
 
+  const handleAdminSubmit = (e) => {
+    e.preventDefault();
+    loadAdminData();
+  };
+
   // Admin Page Component
   const AdminPage = () => (
     <div className="admin-container">
       {!adminData.stats ? (
         <div className="admin-login">
           <h2>Admin Access</h2>
-          <input
-            type="password"
-            placeholder="Admin token"
-            value={adminToken}
-            onChange={(e) => setAdminToken(e.target.value)}
-          />
-          <button className="btn-primary" onClick={loadAdminData}>
-            Enter
-          </button>
+          <form onSubmit={handleAdminSubmit} style={{ display: 'contents' }}>
+            <label htmlFor="admin-token-input">
+              Admin token
+            </label>
+            <input
+              id="admin-token-input"
+              type="password"
+              placeholder="Admin token"
+              value={adminToken}
+              onChange={(e) => setAdminToken(e.target.value)}
+            />
+            <button type="submit" className="btn-primary">
+              Enter
+            </button>
+          </form>
         </div>
       ) : (
         <>
